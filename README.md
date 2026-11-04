@@ -107,3 +107,11 @@ Forking maintains the connection to the original repository and allows you to co
 ## License
 
 This is an educational project—feel free to use it for learning and teaching. The project is released under the MIT License; see `LICENSE.txt` for the full text.
+
+## Team Members
+
+This project is developed collaboratively by our CSE 341 team.
+
+- Repository Owner: Kaye Jover
+- Project: Kizuna Rail
+- Course: CSE 341
