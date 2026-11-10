@@ -1,4 +1,9 @@
+
+import dns from 'node:dns';
 import { MongoClient } from 'mongodb';
+
+// Use public DNS servers for MongoDB Atlas SRV lookups.
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 let database;
 let client;
