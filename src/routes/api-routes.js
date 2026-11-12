@@ -22,7 +22,7 @@ const router = Router();
  *   get:
  *     summary: Get all trips
  *     tags: [Trips]
- *    responses:
+ *     responses:
  *       200:
  *         description: List of all trips
  *         content:
@@ -33,7 +33,7 @@ const router = Router();
  *                 trips:
  *                   type: array
  *                   items:
- *                      $ref: '#/components/schemas/Trip'
+ *                     $ref: '#/components/schemas/Trip'
  *       500:
  *         description: Failed to fetch trips
  */
@@ -118,26 +118,22 @@ import { getAllBookings } from "../controllers/bookings.js";
  * @swagger
  * /bookings:
  *   get:
- *     summary: Get all bookings
- *     tags:
- *       - Bookings
+ *     summary: Get all Bookings
+ *     tags: [Bookings]
  *     responses:
  *       200:
- *         description: List of all bookings
+ *         description: List of all Bookings
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
+ *                 bookings:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Booking'
  *       500:
- *         description: Internal server error
+ *         description: Failed to fetch trips
  */
 router.get("/bookings", getAllBookings);
 export default router;
