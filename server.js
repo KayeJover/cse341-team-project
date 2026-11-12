@@ -1,5 +1,6 @@
 import app from './app.js';
 import { connectToDb } from './src/db/connect.js';
+import 'dotenv/config';
 
 const NODE_ENV = process.env.NODE_ENV?.toLowerCase() || 'production';
 const PORT = process.env.PORT || 3000;
