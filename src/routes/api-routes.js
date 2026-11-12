@@ -22,7 +22,7 @@ const router = Router();
  *   get:
  *     summary: Get all trips
  *     tags: [Trips]
- *     responses:
+ *    responses:
  *       200:
  *         description: List of all trips
  *         content:
@@ -33,7 +33,7 @@ const router = Router();
  *                 trips:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Trip'
+ *                      $ref: '#/components/schemas/Trip'
  *       500:
  *         description: Failed to fetch trips
  */
@@ -109,4 +109,35 @@ router.get("/trips", getAllTrips);
 // Get a single trip
 router.get("/trips/:tripId", getTripById);
 
+
+
+// Booking endpoints
+import { getAllBookings } from "../controllers/bookings.js";
+
+/**
+ * @swagger
+ * /bookings:
+ *   get:
+ *     summary: Get all bookings
+ *     tags:
+ *       - Bookings
+ *     responses:
+ *       200:
+ *         description: List of all bookings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Booking'
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/bookings", getAllBookings);
 export default router;
