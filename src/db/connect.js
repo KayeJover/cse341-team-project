@@ -1,5 +1,6 @@
 
 import dns from 'node:dns';
+import mongoose from 'mongoose';
 import { MongoClient } from 'mongodb';
 
 // Use public DNS servers for MongoDB Atlas SRV lookups.
@@ -20,9 +21,17 @@ const connectToDb = async (options = {}) => {
     throw new Error('MONGODB_URI is required.');
   }
 
+  // Connect Mongoose for models and schemas.
+  await mongoose.connect(connectionString, {
+    dbName: databaseName,
+  });
+
+  // Keep the native MongoDB connection for existing features.
   client = new MongoClient(connectionString);
   await client.connect();
+
   database = client.db(databaseName);
+
   return database;
 };
 
@@ -30,6 +39,7 @@ const getDb = () => {
   if (!database) {
     throw new Error('Database not initialized. Call connectToDb first.');
   }
+
   return database;
 };
 
@@ -39,6 +49,8 @@ const closeDb = async () => {
     client = undefined;
     database = undefined;
   }
+
+  await mongoose.disconnect();
 };
 
 export { closeDb, connectToDb, getDb };
