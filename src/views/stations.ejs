@@ -1,0 +1,39 @@
+
+<%- include('./partials/header') %>
+
+<section class="stations-hero">
+    <h1>Explore Our Stations</h1>
+    <p>
+        Discover the stations across the Kizuna Rail network, including their
+        locations, facilities, and unique features.
+    </p>
+</section>
+
+<section class="stations-catalog">
+    <div class="stations-state" id="stations-loading">Loading stations...</div>
+    <div class="stations-state stations-error" id="stations-error" hidden></div>
+
+    <div class="stations-grid" id="stations-list"></div>
+
+    <template id="station-card-template">
+        <article class="station-card">
+            <h2 data-field="name"></h2>
+
+            <p class="station-location">
+                <span data-field="prefecture"></span> |
+                <span data-field="region"></span>
+            </p>
+
+            <p class="station-description" data-field="description"></p>
+
+            <h3>Facilities</h3>
+            <ul class="station-facilities" data-field="facilities"></ul>
+
+            <a class="station-details-link" data-field="details-link">
+                View station details
+            </a>
+        </article>
+    </template>
+</section>
+
+<%- include('./partials/footer') %>
