@@ -113,6 +113,7 @@ router.get("/trips/:tripId", getTripById);
 
 // Booking endpoints
 import { getAllBookings } from "../controllers/bookings.js";
+import { getAllTrains } from "../controllers/trains.js";
 
 /**
  * @swagger
@@ -136,4 +137,9 @@ import { getAllBookings } from "../controllers/bookings.js";
  *         description: Failed to fetch trips
  */
 router.get("/bookings", getAllBookings);
+
+
+// Trains endpoints
+
+router.get("/trains", getAllTrains)
 export default router;
