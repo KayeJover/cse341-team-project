@@ -1,7 +1,7 @@
 
 import dns from 'node:dns';
-import { MongoClient } from 'mongodb';
 import mongoose from 'mongoose';
+import { MongoClient } from 'mongodb';
 
 // Use public DNS servers for MongoDB Atlas SRV lookups.
 dns.setServers(['8.8.8.8', '1.1.1.1']);
@@ -24,13 +24,29 @@ const connectToDb = async (options = {}) => {
   // Connect using the native MongoDB driver.
   client = new MongoClient(connectionString);
   await client.connect();
+
   database = client.db(databaseName);
 
   // Connect Mongoose to the same database.
   await mongoose.connect(connectionString, {
-    dbName: databaseName
+    dbName: databaseName,
+  });
+  // Connect Mongoose for models and schemas.
+  await mongoose.connect(connectionString, {
+    dbName: databaseName,
   });
 
+  // Keep the native MongoDB connection for existing features.
+  // Connect using the native MongoDB driver.
+  client = new MongoClient(connectionString);
+  await client.connect();
+
+  database = client.db(databaseName);
+
+  // Connect Mongoose to the same database.
+  await mongoose.connect(connectionString, {
+    dbName: databaseName,
+  });
   return database;
 };
 
@@ -38,6 +54,7 @@ const getDb = () => {
   if (!database) {
     throw new Error('Database not initialized. Call connectToDb first.');
   }
+
   return database;
 };
 
@@ -49,7 +66,7 @@ const closeDb = async () => {
   }
 
   if (mongoose.connection.readyState !== 0) {
-    await mongoose.disconnect();
+        await mongoose.disconnect();
   }
 };
 

@@ -1,10 +1,11 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 const setup = async (project) => {
-  const mongoServer = await MongoMemoryServer.create({
+     const mongoServer = await MongoMemoryServer.create({
     instance: {
-      launchTimeout: 30_000
-    }
+      launchTimeout: 60_000,
+      args: ['--wiredTigerCacheSizeGB=0.25'],
+    },
   });
 
   project.provide('MONGODB_TEST_URI', mongoServer.getUri());
