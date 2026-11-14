@@ -4,7 +4,14 @@ import {
     getAllTrips,
     getTripById,
 } from "../controllers/trips.js";
-
+import {
+    getAllStations,
+    getStationById,
+} from "../controllers/stations.js";
+import {
+    getAllTrains,
+    getTrainById,
+} from "../controllers/trains.js";
 const router = Router();
 
 
@@ -108,5 +115,10 @@ router.get("/trips", getAllTrips);
 
 // Get a single trip
 router.get("/trips/:tripId", getTripById);
-
+// Stations API
+router.get("/stations", getAllStations);
+router.get("/stations/:stationId", getStationById);
+// Trains API
+router.get("/trains", getAllTrains);
+router.get("/trains/:id", getTrainById);
 export default router;

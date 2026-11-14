@@ -1,0 +1,70 @@
+<%- include('./partials/header') %>
+
+<section class="stations-hero">
+    <h1 id="station-name">Loading station...</h1>
+    <p id="station-location"></p>
+</section>
+
+<section class="stations-catalog">
+    <div class="stations-state" id="station-loading">
+        Loading station details...
+    </div>
+
+    <div class="stations-state stations-error" id="station-error" hidden></div>
+
+    <article class="station-card" id="station-details" hidden>
+        <h2>About this station</h2>
+        <p class="station-description" id="station-description"></p>
+
+        <h2>Facilities</h2>
+        <ul class="station-facilities" id="station-facilities"></ul>
+
+        <a class="station-details-link" href="/stations">
+            Back to all stations
+        </a>
+    </article>
+</section>
+
+<script>
+    const stationId = <%- JSON.stringify(stationId) %>;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const loadingEl = document.getElementById('station-loading');
+        const errorEl = document.getElementById('station-error');
+        const detailsEl = document.getElementById('station-details');
+
+        try {
+            const response = await fetch(`/api/stations/${encodeURIComponent(stationId)}`);
+
+            if (!response.ok) {
+                throw new Error('Station not found');
+            }
+
+            const data = await response.json();
+            const station = data.station;
+
+            document.getElementById('station-name').textContent = station.name;
+            document.getElementById('station-location').textContent =
+                `${station.prefecture} | ${station.region}`;
+            document.getElementById('station-description').textContent =
+                station.description;
+
+            const facilitiesEl = document.getElementById('station-facilities');
+
+            station.facilities.forEach((facility) => {
+                const item = document.createElement('li');
+                item.textContent = facility.replaceAll('_', ' ');
+                facilitiesEl.appendChild(item);
+            });
+
+            loadingEl.hidden = true;
+            detailsEl.hidden = false;
+        } catch (error) {
+            loadingEl.hidden = true;
+            errorEl.hidden = false;
+            errorEl.textContent = 'Unable to load this station. It may not exist.';
+        }
+    });
+</script>
+
+<%- include('./partials/footer') %>

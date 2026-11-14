@@ -1,0 +1,93 @@
+
+.stations-hero {
+    padding: var(--space-2xl) var(--space-lg);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(125deg, #f0faf7 0%, #d8f0e7 55%, #c4e7d9 100%);
+    border: 1px solid #acd6c4;
+
+    h1 {
+        margin: 0 0 var(--space-sm) 0;
+        color: var(--clr-text-primary);
+        font-size: var(--font-size-3xl);
+    }
+
+    p {
+        margin: 0;
+        max-width: 70ch;
+        color: var(--clr-text-secondary);
+    }
+}
+
+.stations-catalog {
+    display: block;
+
+    .stations-state {
+        margin-bottom: var(--space-md);
+        color: var(--clr-text-secondary);
+    }
+
+    .stations-error {
+        color: #8f1f1f;
+    }
+
+    .stations-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+    }
+
+    .station-card {
+        padding: var(--space-lg);
+        border: 1px solid #acd6c4;
+        border-radius: var(--radius-lg);
+        background: linear-gradient(180deg, #ffffff 0%, #f5fbf8 100%);
+        box-shadow: var(--shadow-sm);
+
+        h2 {
+            margin: 0 0 var(--space-sm) 0;
+            color: var(--clr-text-primary);
+            font-size: var(--font-size-xl);
+        }
+
+        .station-location {
+            margin: 0 0 var(--space-md) 0;
+            color: var(--clr-primary);
+        }
+
+        .station-description {
+            margin: 0 0 var(--space-md) 0;
+            color: var(--clr-text-secondary);
+        }
+
+        .station-facilities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs);
+            margin: 0 0 var(--space-md) 0;
+            padding: 0;
+            list-style: none;
+
+            li {
+                padding: var(--space-xs) var(--space-sm);
+                border: 1px solid #acd6c4;
+                border-radius: var(--radius-sm);
+                background-color: #e8f5ef;
+                color: var(--clr-text-primary);
+                font-size: var(--font-size-sm);
+            }
+        }
+
+        .station-details-link {
+            color: var(--clr-primary);
+            font-weight: 600;
+        }
+    }
+}
+
+@media (min-width: 768px) {
+    .stations-catalog {
+        .stations-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+}
