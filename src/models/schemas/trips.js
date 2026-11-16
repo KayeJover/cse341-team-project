@@ -48,10 +48,19 @@ const tripSchema = new mongoose.Schema(
             type: [String],
             required: true,
         },
+        // added enum in best season by Sam Levi
         bestSeason: {
             type: String,
             required: true,
             trim: true,
+            enum: ["Spring", "Summer", "Autumn", "Winter"],
+        },
+        // added train, trip could identify the train assigned to operate it.
+        // added by Sam Levi
+        train: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Train",
+            required: true,
         },
         operatingMonths: {
             type: [

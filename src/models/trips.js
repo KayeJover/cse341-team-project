@@ -2,7 +2,9 @@
 import Trip from "./schemas/trips.js";
 
 export async function getTripById(id) {
-    return Trip.findOne({ id }).lean();
+    return Trip.findOne({ id })
+    .populate("train")
+    .lean();
 }
 
 export async function getAllTrips() {
