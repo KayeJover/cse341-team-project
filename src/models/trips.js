@@ -17,4 +17,3 @@ export async function getTripFilters() {
 
     return { regions, seasons };
 }
-
