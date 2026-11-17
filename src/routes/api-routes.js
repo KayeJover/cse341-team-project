@@ -5,6 +5,13 @@ import {
     getTripById,
 } from "../controllers/trips.js";
 
+import {
+    register,
+    login,
+    logout,
+} from "../controllers/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+
 const router = Router();
 
 
@@ -108,5 +115,17 @@ router.get("/trips", getAllTrips);
 
 // Get a single trip
 router.get("/trips/:tripId", getTripById);
+
+// Authentication routes
+router.post("/auth/register", register);
+router.post("/auth/login", login);
+router.post("/auth/logout", logout);
+
+// Get the currently authenticated user.
+router.get("/auth/me", requireAuth, (req, res) => {
+    return res.status(200).json({
+        user: req.session.user,
+    });
+});
 
 export default router;
