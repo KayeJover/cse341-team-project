@@ -88,8 +88,71 @@ const hookTrainsCatalog = async () => {
     }
 };
 
+const hookStationsCatalog = async () => {
+    const listEl = document.getElementById('stations-list');
+    const templateEl = document.getElementById('station-card-template');
+    const loadingEl = document.getElementById('stations-loading');
+    const errorEl = document.getElementById('stations-error');
+
+    if (!listEl || !templateEl) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/stations');
+
+        if (!response.ok) {
+            throw new Error(`Failed to load stations (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const stations = payload.stations || [];
+        const fragment = document.createDocumentFragment();
+
+        stations.forEach((station) => {
+            const card = templateEl.content.cloneNode(true);
+
+            card.querySelector('[data-field="name"]').textContent = station.name;
+            card.querySelector('[data-field="prefecture"]').textContent = station.prefecture;
+            card.querySelector('[data-field="region"]').textContent = station.region;
+            card.querySelector('[data-field="description"]').textContent = station.description;
+
+            const facilitiesEl = card.querySelector('[data-field="facilities"]');
+
+            station.facilities.forEach((facility) => {
+                const item = document.createElement('li');
+                item.textContent = facility.replaceAll('_', ' ');
+                facilitiesEl.appendChild(item);
+            });
+
+            const detailsLink = card.querySelector('[data-field="details-link"]');
+            detailsLink.href = `/stations/${station.id}`;
+
+            fragment.appendChild(card);
+        });
+
+        listEl.replaceChildren(fragment);
+
+        if (loadingEl) {
+            loadingEl.hidden = true;
+        }
+    } catch (error) {
+        console.error('Error loading stations:', error);
+
+        if (loadingEl) {
+            loadingEl.hidden = true;
+        }
+
+        if (errorEl) {
+            errorEl.hidden = false;
+            errorEl.textContent = 'Unable to load stations right now. Please try again.';
+        }
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     hookRegionSorter();
     hookSeasonSorter();
     hookTrainsCatalog();
+    hookStationsCatalog();
 });
