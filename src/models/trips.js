@@ -1,4 +1,4 @@
-
+// src/models/trips.js
 import Trip from "./schemas/trips.js";
 
 export async function getTripById(id) {
