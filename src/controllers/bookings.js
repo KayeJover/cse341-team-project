@@ -3,7 +3,7 @@ import { getDb } from "../db/connect.js";
 import { generateConfirmationCode } from "../includes/helpers.js";
 
 import {
-    getAllBookings,
+    getAllBookings as getAllBookingsFromModel,
     getBookingById,
     createBooking,
     updateBooking,
@@ -77,9 +77,9 @@ const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
 };
 
 // GET /api/bookings
-export const getAllBookingsHandler = async (req, res, next) => {
+export const getAllBookings = async (req, res, next) => {
     try {
-        const bookings = await getAllBookings();
+        const bookings = await getAllBookingsFromModel();
 
         return res.status(200).json({
             count: bookings.length,
@@ -342,4 +342,151 @@ export const deleteBookingHandler = async (req, res, next) => {
     } catch (error) {
         return next(error);
     }
+};
+
+
+// GET /trips/booking/:scheduleId
+export const bookingPage = async (req, res, next) => {
+    try {
+        const scheduleId = Number(req.params.scheduleId);
+        const db = getDb();
+
+        const schedule = await db.collection("schedules").findOne({
+            id: scheduleId,
+        });
+
+        if (!schedule || !schedule.status) {
+            return res.status(404).render("404", {
+                title: "Schedule Not Found",
+            });
+        }
+
+        const trip = await db.collection("trips").findOne({
+            id: schedule.tripId,
+        });
+
+        if (!trip) {
+            return res.status(404).render("404", {
+                title: "Trip Not Found",
+            });
+        }
+
+        const ticketClasses = await db
+            .collection("ticketClasses")
+            .find({})
+            .toArray();
+
+        const ticketOptions = ticketClasses.map((ticketClass) => ({
+            class: ticketClass.class,
+            name: ticketClass.name,
+            price: trip.distance * ticketClass.pricePerKm,
+            amenities: ticketClass.amenities,
+            description: ticketClass.description,
+        }));
+
+        return res.render("trips/book", {
+            title: "Book Trip",
+            schedule,
+            ticketOptions,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+// POST /trips/book
+export const processBookingRequest = async (req, res, next) => {
+    try {
+        const {
+            scheduleId,
+            ticketClass,
+            selectedDay,
+            passengers,
+        } = req.body;
+
+        const numericScheduleId = Number(scheduleId);
+
+        if (
+            !Number.isInteger(numericScheduleId) ||
+            numericScheduleId < 1 ||
+            typeof ticketClass !== "string" ||
+            typeof selectedDay !== "string" ||
+            !validatePassengers(passengers)
+        ) {
+            return res.status(400).send("Invalid booking information.");
+        }
+
+        const normalizedDay = selectedDay.toLowerCase();
+
+        const details = await getBookingDetails(
+            numericScheduleId,
+            ticketClass,
+            normalizedDay
+        );
+
+        if (details.error) {
+            return res.status(400).send(details.error);
+        }
+
+        const bookingData = {
+            id: generateConfirmationCode(),
+            ...details,
+            passengers: passengers.map((passenger) => ({
+                firstName: passenger.firstName.trim(),
+                lastName: passenger.lastName.trim(),
+                email: passenger.email.trim().toLowerCase(),
+                phone: passenger.phone.trim(),
+            })),
+            totalAmount: details.unitPrice * passengers.length,
+            status: "confirmed",
+        };
+
+        const booking = await createBooking(bookingData);
+
+        return res.redirect(
+            `/trips/confirmation/${booking.id}`
+        );
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(409).send(
+                "Booking reference already exists."
+            );
+        }
+
+        if (error.name === "ValidationError") {
+            return res.status(400).send(error.message);
+        }
+
+        return next(error);
+    }
+};
+
+// GET /trips/confirmation/:confirmationId
+export const confirmationPage = async (req, res, next) => {
+    try {
+        const booking = await getBookingById(
+            req.params.confirmationId
+        );
+
+        if (!booking) {
+            return res.status(404).render("404", {
+                title: "Booking Not Found",
+            });
+        }
+
+        return res.render("trips/confirm", {
+            title: "Trip Confirmation",
+            confirmation: booking,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+
+// GET /bookings-admin
+export const bookingsPage = (req, res) => {
+    return res.render("bookings", {
+        title: "Bookings",
+    });
 };

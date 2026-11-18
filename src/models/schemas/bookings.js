@@ -96,7 +96,7 @@ const bookingSchema = new mongoose.Schema(
     },
     {
         timestamps: true,
-        collection: "confirmations",
+        collection: "bookings",
     }
 );
 
