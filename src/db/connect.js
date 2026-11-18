@@ -3,71 +3,65 @@ import dns from 'node:dns';
 import mongoose from 'mongoose';
 import { MongoClient } from 'mongodb';
 
-// Use public DNS servers for MongoDB Atlas SRV lookups.
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 let database;
 let client;
 
 const connectToDb = async (options = {}) => {
-  if (database) {
-    return database;
-  }
+    if (database) {
+        return database;
+    }
 
-  const connectionString = options.connectionString || process.env.MONGODB_URI;
-  const databaseName = options.databaseName || process.env.MONGODB_DB_NAME || 'practice';
+    const connectionString =
+        options.connectionString || process.env.MONGODB_URI;
 
-  if (!connectionString) {
-    throw new Error('MONGODB_URI is required.');
-  }
+    const databaseName =
+        options.databaseName || process.env.MONGODB_DB_NAME || 'practice';
 
-  // Connect using the native MongoDB driver.
-  client = new MongoClient(connectionString);
-  await client.connect();
+    if (!connectionString) {
+        throw new Error('MONGODB_URI is required.');
+    }
 
-  database = client.db(databaseName);
+    const mongoClient = new MongoClient(connectionString);
 
-  // Connect Mongoose to the same database.
-  await mongoose.connect(connectionString, {
-    dbName: databaseName,
-  });
-  // Connect Mongoose for models and schemas.
-  await mongoose.connect(connectionString, {
-    dbName: databaseName,
-  });
+    await mongoClient.connect();
 
-  // Keep the native MongoDB connection for existing features.
-  // Connect using the native MongoDB driver.
-  client = new MongoClient(connectionString);
-  await client.connect();
+    try {
+        await mongoose.connect(connectionString, {
+            dbName: databaseName,
+        });
 
-  database = client.db(databaseName);
+        client = mongoClient;
+        database = client.db(databaseName);
 
-  // Connect Mongoose to the same database.
-  await mongoose.connect(connectionString, {
-    dbName: databaseName,
-  });
-  return database;
+        return database;
+    } catch (error) {
+        await mongoClient.close();
+        throw error;
+    }
 };
 
 const getDb = () => {
-  if (!database) {
-    throw new Error('Database not initialized. Call connectToDb first.');
-  }
+    if (!database) {
+        throw new Error(
+            'Database not initialized. Call connectToDb first.'
+        );
+    }
 
-  return database;
+    return database;
 };
 
 const closeDb = async () => {
-  if (client) {
-    await client.close();
-    client = undefined;
-    database = undefined;
-  }
+    if (client) {
+        await client.close();
+        client = undefined;
+        database = undefined;
+    }
 
-  if (mongoose.connection.readyState !== 0) {
+    if (mongoose.connection.readyState !== 0) {
         await mongoose.disconnect();
-  }
+    }
 };
 
 export { closeDb, connectToDb, getDb };

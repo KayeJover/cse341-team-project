@@ -1,20 +1,30 @@
-
+// src/routes/api-routes.js
 import { Router } from "express";
+
 import {
     getAllTrips,
     getTripById,
 } from "../controllers/trips.js";
+
 import {
     getAllStations,
     getStationById,
 } from "../controllers/stations.js";
+
 import {
     getAllTrains,
     getTrainById,
 } from "../controllers/trains.js";
+
+import {
+    getAllBookingsHandler,
+    getBookingHandler,
+    createBookingHandler,
+    updateBookingHandler,
+    deleteBookingHandler,
+} from "../controllers/bookings.js";
+
 const router = Router();
-
-
 
 /**
  * @swagger
@@ -121,4 +131,12 @@ router.get("/stations/:stationId", getStationById);
 // Trains API
 router.get("/trains", getAllTrains);
 router.get("/trains/:id", getTrainById);
+
+// Bookings API
+router.get("/bookings", getAllBookingsHandler);
+router.get("/bookings/:bookingId", getBookingHandler);
+router.post("/bookings", createBookingHandler);
+router.put("/bookings/:bookingId", updateBookingHandler);
+router.delete("/bookings/:bookingId", deleteBookingHandler);
+
 export default router;
