@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import apiRouter from "./api-routes.js";
 import ejsRouter from "./ejs-routes.js";

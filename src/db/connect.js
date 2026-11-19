@@ -21,17 +21,32 @@ const connectToDb = async (options = {}) => {
     throw new Error('MONGODB_URI is required.');
   }
 
+  // Connect using the native MongoDB driver.
+  client = new MongoClient(connectionString);
+  await client.connect();
+
+  database = client.db(databaseName);
+
+  // Connect Mongoose to the same database.
+  await mongoose.connect(connectionString, {
+    dbName: databaseName,
+  });
   // Connect Mongoose for models and schemas.
   await mongoose.connect(connectionString, {
     dbName: databaseName,
   });
 
   // Keep the native MongoDB connection for existing features.
+  // Connect using the native MongoDB driver.
   client = new MongoClient(connectionString);
   await client.connect();
 
   database = client.db(databaseName);
 
+  // Connect Mongoose to the same database.
+  await mongoose.connect(connectionString, {
+    dbName: databaseName,
+  });
   return database;
 };
 
@@ -50,7 +65,9 @@ const closeDb = async () => {
     database = undefined;
   }
 
-  await mongoose.disconnect();
+  if (mongoose.connection.readyState !== 0) {
+        await mongoose.disconnect();
+  }
 };
 
 export { closeDb, connectToDb, getDb };
