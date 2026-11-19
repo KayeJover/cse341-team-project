@@ -9,7 +9,7 @@ Schedules. I implemented the initial Schedules feature by creating a Mongoose sc
 
 2. Provide your walk-through video link. This video must demonstrate your feature working locally and follow the script in the assignment. (If you created more than one video for your feature set, include them all here.)
 
-Video link: https://youtu.be/FhAYTU-fy6s
+Video link: https://youtu.be/ewl_ENu04Ow
 
 3. Provide links to all GitHub Issues you created for your selected feature set.
 
