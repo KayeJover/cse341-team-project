@@ -10,6 +10,9 @@ import {
     deleteBooking,
 } from "../models/bookings.js";
 
+import { getAllTicketClasses } from "../models/ticket-classes.js";
+
+
 // Validate passenger information
 const validatePassengers = (passengers) => {
     if (
@@ -371,10 +374,7 @@ export const bookingPage = async (req, res, next) => {
             });
         }
 
-        const ticketClasses = await db
-            .collection("ticketClasses")
-            .find({})
-            .toArray();
+       const ticketClasses = await getAllTicketClasses();
 
         const ticketOptions = ticketClasses.map((ticketClass) => ({
             class: ticketClass.class,
