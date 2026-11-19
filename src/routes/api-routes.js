@@ -12,6 +12,11 @@ import {
     getAllTrains,
     getTrainById,
 } from "../controllers/trains.js";
+import {
+    getAllTicketClasses,
+    getTicketClassesForDay
+} from "../controllers/ticket-classes.js";
+
 const router = Router();
 
 
@@ -121,4 +126,87 @@ router.get("/stations/:stationId", getStationById);
 // Trains API
 router.get("/trains", getAllTrains);
 router.get("/trains/:id", getTrainById);
+
+/**
+ * @swagger
+ * /ticket-classes:
+ *   get:
+ *     summary: Get all ticket classes or filter by weekday
+ *     tags: [Ticket Classes]
+ *     parameters:
+ *       - in: query
+ *         name: day
+ *         required: false
+ *         description: Optional lowercase weekday name
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - monday
+ *             - tuesday
+ *             - wednesday
+ *             - thursday
+ *             - friday
+ *             - saturday
+ *             - sunday
+ *         example: monday
+ *     responses:
+ *       200:
+ *         description: Matching ticket classes, or an empty array
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ticketClasses:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       class:
+ *                         type: string
+ *                         enum: [standard, premium, first]
+ *                       name:
+ *                         type: string
+ *                       pricePerKm:
+ *                         type: number
+ *                         minimum: 0
+ *                       amenities:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       description:
+ *                         type: string
+ *                       availableDays:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                           enum:
+ *                             - monday
+ *                             - tuesday
+ *                             - wednesday
+ *                             - thursday
+ *                             - friday
+ *                             - saturday
+ *                             - sunday
+ *       400:
+ *         description: Empty or invalid weekday parameter
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: Invalid day. Use a lowercase weekday name.
+ *       500:
+ *         description: Unable to retrieve ticket classes
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: Unable to retrieve ticket classes.
+ */
+router.get("/ticket-classes", (req, res) => {
+    if (req.query.day !== undefined) {
+        return getTicketClassesForDay(req, res);
+    }
+
+    return getAllTicketClasses(req, res);
+});
+
 export default router;
