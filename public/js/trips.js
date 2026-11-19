@@ -6,23 +6,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let trips = [];
 
-    async function loadTrips() {
-        try {
-            const response = await fetch("/api/trips");
+   async function loadTrips() {
+    routesGrid.replaceChildren();
 
-            if (!response.ok) {
-                throw new Error("Failed to load trips.");
-            }
+    const loadingMessage = document.createElement("p");
+    loadingMessage.textContent = "Loading trips...";
+    loadingMessage.setAttribute("role", "status");
+    routesGrid.appendChild(loadingMessage);
 
-            const data = await response.json();
-            trips = data.trips;
+    try {
+        const response = await fetch("/api/trips");
 
-            renderTrips();
-        } catch (error) {
-            console.error("Error loading trips:", error);
-            routesGrid.innerHTML = "<p>Unable to load trips. Please try again later.</p>";
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
         }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data.trips)) {
+            throw new Error("Invalid trips data received");
+        }
+
+        trips = data.trips;
+        renderTrips();
+    } catch (error) {
+        console.error("Error loading trips:", error);
+
+        routesGrid.replaceChildren();
+
+        const errorMessage = document.createElement("p");
+        errorMessage.textContent =
+            "Unable to load trips. Please try again.";
+        errorMessage.setAttribute("role", "alert");
+
+        const retryButton = document.createElement("button");
+        retryButton.type = "button";
+        retryButton.textContent = "Retry Loading Trips";
+        retryButton.className = "retry-trips-btn";
+
+        retryButton.addEventListener("click", loadTrips);
+
+        routesGrid.append(errorMessage, retryButton);
     }
+}
 
     function renderTrips() {
         const selectedRegion = regionFilter.value;
