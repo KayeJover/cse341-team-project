@@ -5,13 +5,19 @@ import {
     getTripById,
 } from "../controllers/trips.js";
 import {
+    getSchedulesForTrip,
+} from "../controllers/schedules.js";
+
+import {
     getAllStations,
     getStationById,
 } from "../controllers/stations.js";
+
 import {
     getAllTrains,
     getTrainById,
 } from "../controllers/trains.js";
+
 const router = Router();
 
 
@@ -108,6 +114,28 @@ const router = Router();
  *           type: string
  */
 
+/**
+ * @swagger
+ * /trips/{tripId}/schedules:
+ *   get:
+ *     summary: Get schedules for a trip
+ *     tags: [Trips]
+ *     parameters:
+ *       - in: path
+ *         name: tripId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Schedules returned successfully
+ *       500:
+ *         description: Failed to fetch schedules
+ */
+router.get(
+  "/trips/:tripId/schedules",
+  getSchedulesForTrip
+);
 
 
 // Get all trips
