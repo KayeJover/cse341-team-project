@@ -1,0 +1,68 @@
+
+<%- include('./partials/header') %>
+
+<section class="bookings-hero">
+    <h1>Bookings</h1>
+    <p>View and manage passenger bookings across the Kizuna Rail network.</p>
+</section>
+
+<section class="bookings-catalog">
+
+    <div class="booking-summary">
+        <article class="booking-summary-card">
+            <h2 id="total-bookings">0</h2>
+            <p>Total Bookings</p>
+        </article>
+
+        <article class="booking-summary-card">
+            <h2 id="confirmed-bookings">0</h2>
+            <p>Confirmed Bookings</p>
+        </article>
+    </div>
+
+    <div id="bookings-loading" class="bookings-state">
+        Loading bookings...
+    </div>
+
+    <div id="bookings-error" class="bookings-state bookings-error" hidden>
+    </div>
+
+    <div class="bookings-table-wrapper">
+        <table class="bookings-table">
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Schedule</th>
+                    <th>Trip</th>
+                    <th>Passengers</th>
+                    <th>Ticket Class</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+
+            <tbody id="bookings-list">
+                <!-- Booking records are populated using JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <template id="booking-row-template">
+        <tr>
+            <td data-field="id"></td>
+            <td data-field="schedule"></td>
+            <td data-field="trip"></td>
+            <td data-field="passengers"></td>
+            <td data-field="ticket-class"></td>
+            <td data-field="amount"></td>
+            <td data-field="status"></td>
+            <td data-field="created"></td>
+        </tr>
+    </template>
+
+</section>
+
+<script src="/js/bookings.js" defer></script>
+
+<%- include('./partials/footer') %>
