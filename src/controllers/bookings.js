@@ -68,6 +68,15 @@ const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
         return { error: "Invalid ticket class." };
     }
 
+    if (
+        !Array.isArray(ticket.availableDays) ||
+        !ticket.availableDays.includes(selectedDay)
+    ) {
+        return {
+            error: "This ticket class is not available on the selected day.",
+        };
+    }
+
     const unitPrice = trip.distance * ticket.pricePerKm;
 
     return {

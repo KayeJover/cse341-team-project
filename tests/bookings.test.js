@@ -68,6 +68,22 @@ describe("Bookings API", () => {
         expect(response.body.booking.totalAmount).toBe(expectedPrice);
     });
 
+    test("POST /api/bookings rejects First Class on an unavailable day", async () => {
+        const unavailableBooking = {
+            ...validBooking,
+            ticketClass: "first",
+            selectedDay: "monday",
+        };
+
+        const response = await request(app)
+            .post("/api/bookings")
+            .send(unavailableBooking)
+            .expect(400);
+
+        expect(response.body.message).toBe(
+            "This ticket class is not available on the selected day."
+        );
+    });
     test("POST /api/bookings rejects invalid passenger information", async () => {
         const invalidBooking = {
             ...validBooking,
