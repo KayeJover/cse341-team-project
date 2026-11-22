@@ -1,10 +1,11 @@
 // src/routes/api-routes.js
 import { Router } from "express";
-
 import {
     getAllTrips,
     getTripById,
 } from "../controllers/trips.js";
+
+import { getSchedulesForTrip } from "../controllers/schedules.js";
 
 import {
     getAllStations,
@@ -122,6 +123,27 @@ const router = Router();
  *           type: string
  */
 
+/**
+ * @swagger
+ * /trips/{tripId}/schedules:
+ *   get:
+ *     summary: Get schedules for a trip
+ *     tags: [Trips]
+ *     parameters:
+ *       - in: path
+ *         name: tripId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Schedules returned successfully
+ *       404:
+ *         description: Trip not found
+ *       500:
+ *         description: Failed to fetch schedules
+ */
+router.get("/trips/:tripId/schedules", getSchedulesForTrip);
 
 /**
  * @swagger
@@ -340,16 +362,15 @@ const router = Router();
  *         description: Server error
  */
 
-
-
-// Get all trips
+// Trips API
 router.get("/trips", getAllTrips);
-
-// Get a single trip
 router.get("/trips/:tripId", getTripById);
+
+
 // Stations API
 router.get("/stations", getAllStations);
 router.get("/stations/:stationId", getStationById);
+
 // Trains API
 router.get("/trains", getAllTrains);
 router.get("/trains/:id", getTrainById);
@@ -441,6 +462,5 @@ router.get("/bookings/:bookingId", getBookingHandler);
 router.post("/bookings", createBookingHandler);
 router.put("/bookings/:bookingId", updateBookingHandler);
 router.delete("/bookings/:bookingId", deleteBookingHandler);
-
 
 export default router;
