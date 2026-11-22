@@ -14,9 +14,10 @@
         <section class="ticket-selection">
             <h2 class="section-title">Select Your Ticket</h2>
             
-            <p id="ticketAvailabilityStatus" role="status" aria-live="polite">
-                Checking ticket availability…
-            </p>
+          <p id="ticketAvailabilityStatus" role="status" aria-live="polite">
+            Checking ticket availability…
+          </p>
+          <button id="retryTicketAvailability" type="button" hidden>Retry</button>
 
 
 
@@ -222,6 +223,10 @@
         'ticketAvailabilityStatus'
     );
 
+    const retryAvailabilityButton = document.getElementById(
+            'retryTicketAvailability'
+        );
+
     let availabilityReady = false;
     let availabilityRequestId = 0;
 
@@ -243,7 +248,7 @@
 
     const updateTicketAvailability = async () => {
         const requestId = ++availabilityRequestId;
-
+        retryAvailabilityButton.hidden = true;
         const selectedDay = document.querySelector(
             'input[name="selectedDay"]:checked'
         );
@@ -331,11 +336,14 @@
             console.error('Unable to check ticket availability:', error);
 
             availabilityStatus.textContent =
-                'Unable to check ticket availability. Select a day again to retry.';
+                'Unable to check ticket availability. Click Retry to try again.';
+            retryAvailabilityButton.hidden = false;
 
             syncTicketSummary();
         }
     };
+
+    retryAvailabilityButton.addEventListener('click', updateTicketAvailability);
 
     bookingForm.addEventListener('submit', (event) => {
         const selected = document.querySelector(
