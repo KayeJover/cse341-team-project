@@ -10,6 +10,9 @@ import {
     deleteBooking,
 } from "../models/bookings.js";
 
+import { getAllTicketClasses } from "../models/ticket-classes.js";
+
+
 // Validate passenger information
 const validatePassengers = (passengers) => {
     if (
@@ -63,6 +66,13 @@ const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
 
     if (!ticket) {
         return { error: "Invalid ticket class." };
+    }
+
+    if (
+        !Array.isArray(ticket.availableDays) ||
+        !ticket.availableDays.includes(selectedDay)
+    ) {
+        return { error: "Selected ticket class is not available on this day." };
     }
 
     const unitPrice = trip.distance * ticket.pricePerKm;
@@ -371,10 +381,7 @@ export const bookingPage = async (req, res, next) => {
             });
         }
 
-        const ticketClasses = await db
-            .collection("ticketClasses")
-            .find({})
-            .toArray();
+       const ticketClasses = await getAllTicketClasses();
 
         const ticketOptions = ticketClasses.map((ticketClass) => ({
             class: ticketClass.class,
