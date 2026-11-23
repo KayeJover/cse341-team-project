@@ -1,0 +1,66 @@
+<%- include('partials/header') %>
+
+    <section class="auth-page">
+        <div class="auth-card">
+            <h1>
+                <%= title %>
+            </h1>
+            <p>Welcome back to Kizuna Rail.</p>
+
+            <div id="loginMessage" role="alert" aria-live="polite"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <button type="submit" id="loginButton">Log In</button>
+            </form>
+
+            <p>Don't have an account? <a href="/register">Register</a></p>
+        </div>
+    </section>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const form = event.currentTarget;
+            const message = document.getElementById('loginMessage');
+            const button = document.getElementById('loginButton');
+
+            const body = Object.fromEntries(new FormData(form).entries());
+
+            button.disabled = true;
+            message.textContent = 'Logging in...';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Login failed.');
+                }
+
+                message.textContent = 'Login successful! Redirecting...';
+                window.location.href = '/';
+            } catch (error) {
+                message.textContent = error.message;
+            } finally {
+                button.disabled = false;
+            }
+        });
+    </script>
+
+    <%- include('partials/footer') %>

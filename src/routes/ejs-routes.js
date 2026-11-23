@@ -20,6 +20,19 @@ import { bookingsPage } from "../controllers/bookings.js";
 
 const router = Router();
 
+// Authentication pages
+router.get("/register", (req, res) => {
+    res.render("register", {
+        title: "Create Account",
+    });
+});
+
+router.get("/login", (req, res) => {
+    res.render("login", {
+        title: "Login",
+    });
+});
+
 // Home page
 router.get("/", homePage);
 
