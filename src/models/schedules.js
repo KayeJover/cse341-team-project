@@ -2,6 +2,10 @@
 import Schedule from "./schemas/schedules.js";
 import Trip from "./schemas/trips.js";
 
+export async function getScheduleById(id) {
+    return Schedule.findOne({ id: Number(id) }).lean();
+}
+
 export async function getSchedulesByTripId(tripId, month = null) {
     const trip = await Trip.findOne({ id: tripId }).lean();
 
