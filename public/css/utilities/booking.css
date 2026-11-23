@@ -565,3 +565,36 @@ article.booking-page {
         }
     }
 }
+
+article.booking-page .booking-form .ticket-selection .ticket-options {
+    .ticket-card.unavailable {
+        opacity: 0.45;
+        filter: grayscale(1);
+        cursor: not-allowed;
+    }
+
+    .ticket-card.unavailable:hover {
+        border-color: var(--clr-border);
+        box-shadow: none;
+    }
+
+    .ticket-card.unavailable .ticket-content {
+        pointer-events: none;
+    }
+
+    .ticket-card:has(input:focus-visible) {
+        outline: 3px solid var(--clr-primary);
+        outline-offset: 3px;
+    }
+}
+
+article.booking-page .booking-form .form-actions .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+article.booking-page .booking-form .form-actions .btn.btn-primary:disabled:hover {
+    background-color: var(--clr-primary);
+    box-shadow: none;
+}

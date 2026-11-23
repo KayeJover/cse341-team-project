@@ -90,47 +90,33 @@
                 </div>
             </div>
 
-            <% if (details.schedules && details.schedules.length> 0) { %>
-                <div class="route-schedules">
-                    <h2>Available Schedules</h2>
+            
+            <div class="route-schedules">
+                <h2>Available Schedules</h2>
 
-                    <div class="schedules-grid">
-                        <% details.schedules.forEach(function(schedule) { %>
-                            <div class="schedule-card">
-                                <div class="schedule-times">
-                                    <div class="time-block">
-                                        <span class="time-label">Departs</span>
-                                        <span class="time-value">
-                                            <%= schedule.departureTime %>
-                                        </span>
-                                    </div>
+                <div class="schedule-filter">
+                    <label for="schedule-month">Select Operating Month</label>
 
-                                    <span class="time-arrow">→</span>
+                    <select id="schedule-month">
+                        <option value="">All Operating Months</option>
 
-                                    <div class="time-block">
-                                        <span class="time-label">Arrives</span>
-                                        <span class="time-value">
-                                            <%= schedule.arrivalTime %>
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div class="schedule-days">
-                                    <% schedule.daysOfWeek.forEach(function(day) { %>
-                                        <span class="day-badge">
-                                            <%= day.substring(0, 3) %>
-                                        </span>
-                                        <% }); %>
-                                </div>
-
-                                <a href="/trips/booking/<%= schedule.id %>" class="book-btn">
-                                    Book Now
-                                </a>
-                            </div>
-                            <% }); %>
-                    </div>
+                        <% details.operatingMonths.forEach(function(month) { %>
+                            <option value="<%= month %>">
+                                <%= new Date(2000, month - 1).toLocaleString('en', { month: 'long' }) %>
+                            </option>
+                        <% }); %>
+                    </select>
                 </div>
-                <% } %>
+
+                <p id="schedule-message" role="status" aria-live="polite">
+                    Loading available schedules...
+                </p>
+
+                <div class="schedules-grid" id="schedules-container">
+                    <!-- Schedules will be loaded dynamically using JavaScript -->
+                </div>
+            </div>
+
         </div>
     </article>
 
