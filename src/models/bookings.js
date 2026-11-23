@@ -1,4 +1,4 @@
-
+// src/models/bookings.js
 import Booking from "./schemas/bookings.js";
 
 export async function getAllBookings() {

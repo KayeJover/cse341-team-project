@@ -1,5 +1,10 @@
-
-import { getDb } from "../db/connect.js";
+// src/controllers/bookings.js
+import { getScheduleById } from "../models/schedules.js";
+import { getTripById } from "../models/trips.js";
+import {
+    getAllTicketClasses,
+    getTicketClassByClass,
+} from "../models/ticket-classes.js";
 import { generateConfirmationCode } from "../includes/helpers.js";
 
 import {
@@ -33,38 +38,45 @@ const validatePassengers = (passengers) => {
     );
 };
 
-// Retrieve booking information and calculate the correct fare
-const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
-    const db = getDb();
 
-    const schedule = await db.collection("schedules").findOne({
-        id: Number(scheduleId),
-    });
+const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
+    // Retrieve schedule using the Schedule model
+    const schedule = await getScheduleById(scheduleId);
 
     if (!schedule || !schedule.status) {
         return { error: "Schedule not found or unavailable." };
     }
 
     if (!schedule.daysOfWeek.includes(selectedDay)) {
-        return { error: "Selected day is not available for this schedule." };
+        return {
+            error: "Selected day is not available for this schedule.",
+        };
     }
 
-    const trip = await db.collection("trips").findOne({
-        id: schedule.tripId,
-    });
+    // Retrieve trip using the Trip model
+    const trip = await getTripById(schedule.tripId);
 
     if (!trip) {
         return { error: "Trip not found." };
     }
 
-    const ticket = await db.collection("ticketClasses").findOne({
-        class: ticketClass,
-    });
+    // Retrieve ticket class using the TicketClass model
+    const ticket = await getTicketClassByClass(ticketClass);
 
     if (!ticket) {
         return { error: "Invalid ticket class." };
     }
 
+    if (
+        !Array.isArray(ticket.availableDays) ||
+        !ticket.availableDays.includes(selectedDay)
+    ) {
+        return {
+            error: "Selected ticket class is not available on this day.",
+        };
+    }
+
+    // Calculate fare
     const unitPrice = trip.distance * ticket.pricePerKm;
 
     return {
@@ -75,6 +87,7 @@ const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
         unitPrice,
     };
 };
+
 
 // GET /api/bookings
 export const getAllBookings = async (req, res, next) => {
@@ -188,6 +201,7 @@ export const createBookingHandler = async (req, res, next) => {
     }
 };
 
+
 // PUT /api/bookings/:bookingId
 export const updateBookingHandler = async (req, res, next) => {
     try {
@@ -208,14 +222,43 @@ export const updateBookingHandler = async (req, res, next) => {
             status,
         } = req.body;
 
-        // Reject an empty update request.
+        // Reject empty update requests.
         if (Object.keys(req.body).length === 0) {
             return res.status(400).json({
                 message: "At least one field is required for an update.",
             });
         }
 
-        // Validate status when supplied.
+        // Allow only supported update fields.
+        const allowedFields = [
+            "ticketClass",
+            "selectedDay",
+            "passengers",
+            "status",
+        ];
+
+        const invalidFields = Object.keys(req.body).filter(
+            (field) => !allowedFields.includes(field)
+        );
+
+        if (invalidFields.length > 0) {
+            return res.status(400).json({
+                message: `Unsupported update fields: ${invalidFields.join(", ")}`,
+            });
+        }
+
+        // Normalize string inputs.
+        const normalizedTicketClass =
+            typeof ticketClass === "string"
+                ? ticketClass.trim().toLowerCase()
+                : ticketClass;
+
+        const normalizedDay =
+            typeof selectedDay === "string"
+                ? selectedDay.trim().toLowerCase()
+                : selectedDay;
+
+        // Validate status.
         if (
             status !== undefined &&
             !["confirmed", "cancelled"].includes(status)
@@ -225,25 +268,28 @@ export const updateBookingHandler = async (req, res, next) => {
             });
         }
 
-        // Validate booking details only when supplied.
+        // Validate ticket class.
         if (
             ticketClass !== undefined &&
-            typeof ticketClass !== "string"
+            (typeof ticketClass !== "string" ||
+                !normalizedTicketClass)
         ) {
             return res.status(400).json({
                 message: "Invalid ticket class.",
             });
         }
 
+        // Validate selected day.
         if (
             selectedDay !== undefined &&
-            typeof selectedDay !== "string"
+            (typeof selectedDay !== "string" || !normalizedDay)
         ) {
             return res.status(400).json({
                 message: "Invalid selected day.",
             });
         }
 
+        // Validate passengers.
         if (
             passengers !== undefined &&
             !validatePassengers(passengers)
@@ -267,12 +313,11 @@ export const updateBookingHandler = async (req, res, next) => {
             passengers !== undefined;
 
         if (bookingDetailsChanged) {
-            const normalizedDay = (
-                selectedDay ?? existingBooking.selectedDay
-            ).toLowerCase();
+            const updatedDay =
+                normalizedDay ?? existingBooking.selectedDay;
 
             const updatedTicketClass =
-                ticketClass ?? existingBooking.ticketClass;
+                normalizedTicketClass ?? existingBooking.ticketClass;
 
             const updatedPassengers =
                 passengers ?? existingBooking.passengers;
@@ -280,7 +325,7 @@ export const updateBookingHandler = async (req, res, next) => {
             const details = await getBookingDetails(
                 existingBooking.scheduleId,
                 updatedTicketClass,
-                normalizedDay
+                updatedDay
             );
 
             if (details.error) {
@@ -290,7 +335,7 @@ export const updateBookingHandler = async (req, res, next) => {
             }
 
             updates.ticketClass = updatedTicketClass;
-            updates.selectedDay = normalizedDay;
+            updates.selectedDay = updatedDay;
 
             updates.passengers = updatedPassengers.map((passenger) => ({
                 firstName: passenger.firstName.trim(),
@@ -308,6 +353,13 @@ export const updateBookingHandler = async (req, res, next) => {
             req.params.bookingId,
             updates
         );
+
+        // Confirm that the database returned the updated booking.
+        if (!booking) {
+            return res.status(404).json({
+                message: "Booking not found.",
+            });
+        }
 
         return res.status(200).json({
             message: "Booking updated successfully.",
@@ -349,11 +401,7 @@ export const deleteBookingHandler = async (req, res, next) => {
 export const bookingPage = async (req, res, next) => {
     try {
         const scheduleId = Number(req.params.scheduleId);
-        const db = getDb();
-
-        const schedule = await db.collection("schedules").findOne({
-            id: scheduleId,
-        });
+        const schedule = await getScheduleById(scheduleId);
 
         if (!schedule || !schedule.status) {
             return res.status(404).render("404", {
@@ -361,9 +409,7 @@ export const bookingPage = async (req, res, next) => {
             });
         }
 
-        const trip = await db.collection("trips").findOne({
-            id: schedule.tripId,
-        });
+        const trip = await getTripById(schedule.tripId);
 
         if (!trip) {
             return res.status(404).render("404", {
@@ -371,10 +417,7 @@ export const bookingPage = async (req, res, next) => {
             });
         }
 
-        const ticketClasses = await db
-            .collection("ticketClasses")
-            .find({})
-            .toArray();
+       const ticketClasses = await getAllTicketClasses();
 
         const ticketOptions = ticketClasses.map((ticketClass) => ({
             class: ticketClass.class,
