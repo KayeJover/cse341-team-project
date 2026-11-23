@@ -1,5 +1,7 @@
+
 const hookRegionSorter = () => {
     const regionSelect = document.getElementById('region-filter');
+
     if (regionSelect) {
         regionSelect.addEventListener('change', () => {
             const selectedRegion = regionSelect.value;
@@ -10,7 +12,7 @@ const hookRegionSorter = () => {
             } else {
                 url.searchParams.delete('region');
             }
-            
+
             window.location.href = url.toString();
         });
     }
@@ -18,6 +20,7 @@ const hookRegionSorter = () => {
 
 const hookSeasonSorter = () => {
     const seasonSelect = document.getElementById('season-filter');
+
     if (seasonSelect) {
         seasonSelect.addEventListener('change', () => {
             const selectedSeason = seasonSelect.value;
@@ -28,7 +31,7 @@ const hookSeasonSorter = () => {
             } else {
                 url.searchParams.delete('season');
             }
-            
+
             window.location.href = url.toString();
         });
     }
@@ -46,6 +49,7 @@ const hookTrainsCatalog = async () => {
 
     try {
         const response = await fetch('/api/trains');
+
         if (!response.ok) {
             throw new Error(`Failed to load trains (${response.status})`);
         }
@@ -74,13 +78,17 @@ const hookTrainsCatalog = async () => {
         });
 
         listEl.replaceChildren(fragment);
+
         if (loadingEl) {
             loadingEl.hidden = true;
         }
     } catch (error) {
+        console.error('Error loading trains:', error);
+
         if (loadingEl) {
             loadingEl.hidden = true;
         }
+
         if (errorEl) {
             errorEl.hidden = false;
             errorEl.textContent = 'Unable to load trains right now. Please try again in a moment.';
@@ -99,7 +107,16 @@ const hookStationsCatalog = async () => {
     }
 
     try {
-        const response = await fetch('/api/stations');
+        const regionSelect = document.getElementById('stations-region-filter');
+        const selectedRegion = regionSelect ? regionSelect.value : 'all';
+
+        const url = new URL('/api/stations', window.location.origin);
+
+        if (selectedRegion !== 'all') {
+            url.searchParams.set('region', selectedRegion);
+        }
+
+        const response = await fetch(url);
 
         if (!response.ok) {
             throw new Error(`Failed to load stations (${response.status})`);
@@ -136,6 +153,12 @@ const hookStationsCatalog = async () => {
         if (loadingEl) {
             loadingEl.hidden = true;
         }
+
+        const errorEl = document.getElementById('stations-error');
+
+        if (errorEl) {
+            errorEl.hidden = true;
+        }
     } catch (error) {
         console.error('Error loading stations:', error);
 
@@ -155,4 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
     hookSeasonSorter();
     hookTrainsCatalog();
     hookStationsCatalog();
+
+    const stationsRegionSelect = document.getElementById('stations-region-filter');
+
+    if (stationsRegionSelect) {
+        stationsRegionSelect.addEventListener('change', () => {
+            hookStationsCatalog();
+        });
+    }
 });
