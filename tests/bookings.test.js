@@ -1,9 +1,30 @@
 
-import { describe, expect, test } from "vitest";
-import request from "supertest";
 
-import app from "../app.js";
+import { describe, expect, test } from "vitest";
+import express from "express";
+import session from "express-session";
+import request from "supertest";
+import bcrypt from "bcrypt";
+
+import apiRouter from "../src/routes/api-routes.js";
+import User from "../src/models/schemas/users.js";
+import Role from "../src/models/schemas/roles.js";
 import { getDb } from "../src/db/connect.js";
+
+const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use(
+    session({
+        secret: "test-session-secret",
+        resave: false,
+        saveUninitialized: false,
+    })
+);
+
+app.use("/api", apiRouter);
 
 const validBooking = {
     scheduleId: 1,
@@ -19,9 +40,40 @@ const validBooking = {
     ],
 };
 
+// Create an admin account and log in through the real login endpoint.
+async function createAdminAgent() {
+    const role = await Role.create({
+        name: "admin",
+    });
+
+    const passwordHash = await bcrypt.hash("AdminPass123!", 12);
+
+    await User.create({
+        displayName: "Test Admin",
+        username: "testadmin",
+        email: "testadmin@example.com",
+        passwordHash,
+        role: role._id,
+    });
+
+    const agent = request.agent(app);
+
+    await agent
+        .post("/api/auth/login")
+        .send({
+            username: "testadmin",
+            password: "AdminPass123!",
+        })
+        .expect(200);
+
+    return agent;
+}
+
 describe("Bookings API", () => {
     test("GET /api/bookings returns all bookings", async () => {
-        const response = await request(app)
+        const agent = await createAdminAgent();
+
+        const response = await agent
             .get("/api/bookings")
             .expect(200);
 
@@ -136,8 +188,9 @@ describe("Bookings API", () => {
             .expect(201);
 
         const bookingId = created.body.booking.id;
+        const agent = await createAdminAgent();
 
-        const response = await request(app)
+        const response = await agent
             .put(`/api/bookings/${bookingId}`)
             .send({
                 status: "cancelled",
@@ -156,8 +209,9 @@ describe("Bookings API", () => {
             .expect(201);
 
         const bookingId = created.body.booking.id;
+        const agent = await createAdminAgent();
 
-        const response = await request(app)
+        const response = await agent
             .put(`/api/bookings/${bookingId}`)
             .send({
                 ticketClass: "premium",
@@ -185,7 +239,9 @@ describe("Bookings API", () => {
             .send(validBooking)
             .expect(201);
 
-        const response = await request(app)
+        const agent = await createAdminAgent();
+
+        const response = await agent
             .put(`/api/bookings/${created.body.booking.id}`)
             .send({
                 status: "pending",
@@ -202,8 +258,9 @@ describe("Bookings API", () => {
             .expect(201);
 
         const bookingId = created.body.booking.id;
+        const agent = await createAdminAgent();
 
-        const response = await request(app)
+        const response = await agent
             .delete(`/api/bookings/${bookingId}`)
             .expect(200);
 
@@ -217,7 +274,9 @@ describe("Bookings API", () => {
     });
 
     test("DELETE /api/bookings/:bookingId returns 404 for an unknown booking", async () => {
-        const response = await request(app)
+        const agent = await createAdminAgent();
+
+        const response = await agent
             .delete("/api/bookings/nonexistent-booking")
             .expect(404);
 

@@ -15,8 +15,12 @@ import {
 } from "../controllers/trips.js";
 
 import railTripsRouter from "./trips.js";
-
 import { bookingsPage } from "../controllers/bookings.js";
+
+import {
+    requirePageLogin,
+    requirePageRole,
+} from "../middleware/auth.js";
 
 const router = Router();
 
@@ -56,8 +60,19 @@ router.get("/stations/:stationId", (req, res) => {
     });
 });
 
-// Bookings pages
-router.get("/bookings", bookingsPage);
-router.get("/bookings-admin", bookingsPage);
+// Admin-only booking pages
+router.get(
+    "/bookings",
+    requirePageLogin(),
+    requirePageRole("admin"),
+    bookingsPage
+);
+
+router.get(
+    "/bookings-admin",
+    requirePageLogin(),
+    requirePageRole("admin"),
+    bookingsPage
+);
 
 export default router;

@@ -1,5 +1,18 @@
+
 // src/routes/api-routes.js
+
 import { Router } from "express";
+
+import {
+    register,
+    login,
+    logout,
+} from "../controllers/auth.js";
+
+import {
+    requireAuth,
+    requireApiRole,
+} from "../middleware/auth.js";
 
 import {
     getAllTrips,
@@ -34,6 +47,30 @@ import {
 } from "../controllers/bookings.js";
 
 const router = Router();
+
+// ==========================================
+// AUTHENTICATION API
+// ==========================================
+
+// Register
+router.post("/auth/register", register);
+
+// Login
+router.post("/auth/login", login);
+
+// Logout
+router.post("/auth/logout", logout);
+
+// Get currently authenticated user
+router.get("/auth/me", requireAuth, (req, res) => {
+    return res.status(200).json({
+        user: req.session.user,
+    });
+});
+
+// ==========================================
+// TRIPS API
+// ==========================================
 
 /**
  * @swagger
@@ -127,6 +164,27 @@ const router = Router();
  *           type: string
  */
 
+// Trips routes
+router.get("/trips", getAllTrips);
+router.get("/trips/:tripId", getTripById);
+
+// ==========================================
+// STATIONS API
+// ==========================================
+
+router.get("/stations", getAllStations);
+router.get("/stations/:stationId", getStationById);
+
+// ==========================================
+// TRAINS API
+// ==========================================
+
+router.get("/trains", getAllTrains);
+router.get("/trains/:id", getTrainById);
+
+// ==========================================
+// BOOKINGS API
+// ==========================================
 
 
 /**
@@ -447,6 +505,8 @@ router.get(
  */
 
 
+// Bookings routes
+router.get("/bookings", requireApiRole("admin"), getAllBookings);
 
 // Get all trips
 router.get("/trips", getAllTrips);
@@ -545,8 +605,19 @@ router.get("/ticket-classes", (req, res) => {
 router.get("/bookings", getAllBookings);
 router.get("/bookings/:bookingId", getBookingHandler);
 router.post("/bookings", createBookingHandler);
-router.put("/bookings/:bookingId", updateBookingHandler);
-router.delete("/bookings/:bookingId", deleteBookingHandler);
+router.put(
+    "/bookings/:bookingId",
+    requireApiRole("admin"),
+    updateBookingHandler
+);
+router.delete(
+    "/bookings/:bookingId",
+    requireApiRole("admin"),
+    deleteBookingHandler
+);
 
+// ==========================================
+// EXPORT ROUTER
+// ==========================================
 
 export default router;

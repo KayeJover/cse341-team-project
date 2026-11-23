@@ -1,13 +1,15 @@
-// src/app.js
-
+import 'dotenv/config';
 import express from 'express';
 import Path from 'path';
 import { fileURLToPath } from 'url';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
+
 import pkg from './package.json' with { type: 'json' };
 import globalMiddleware from './src/middleware/global.js';
 import routes from './src/routes/router.js';
-import swaggerUi from "swagger-ui-express";
-import swaggerSpec from "./src/config/swagger.js";
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './src/config/swagger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = Path.dirname(__filename);
@@ -29,12 +31,37 @@ app.set('views', Path.join(__dirname, 'src/views'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Configure session storage using MongoDB.
+if (!process.env.SESSION_SECRET) {
+    throw new Error('SESSION_SECRET is required.');
+}
+
+app.use(session({
+    name: 'kizuna.sid',
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        dbName: process.env.MONGODB_DB_NAME || 'practice',
+        collectionName: 'sessions',
+        ttl: 60 * 60,
+    }),
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 1000,
+    },
+}));
+
 app.use(globalMiddleware);
+
 // Swagger API documentation
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Application routes
-
 app.use('/', routes);
 
 // Catch requests that did not match a route.
@@ -48,6 +75,7 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
     const status = err.status || 500;
     const template = status === 404 ? '404' : '500';
+
     const context = {
         title: status === 404 ? 'Page Not Found' : 'Server Error',
         error: err.message,
