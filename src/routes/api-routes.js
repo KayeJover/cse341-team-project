@@ -7,6 +7,11 @@ import {
 } from "../controllers/trips.js";
 
 import {
+    getSchedulesForTrip,
+    getSchedulesForTripAndMonth,
+} from "../controllers/schedules.js";
+
+import {
     getAllStations,
     getStationById,
 } from "../controllers/stations.js";
@@ -121,6 +126,107 @@ const router = Router();
  *         imageUrl:
  *           type: string
  */
+
+
+
+/**
+ * @swagger
+ * /trips/{tripId}/schedules:
+ *   get:
+ *     summary: Get schedules for a trip
+ *     description: Retrieves active schedules for a trip, optionally filtered by operating month.
+ *     tags:
+ *       - Trips
+ *     parameters:
+ *       - in: path
+ *         name: tripId
+ *         required: true
+ *         description: Unique ID of the trip
+ *         schema:
+ *           type: string
+ *         example: alpine-panorama
+ *       - in: query
+ *         name: month
+ *         required: false
+ *         description: Operating month number (1 through 12)
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 12
+ *         example: 4
+ *     responses:
+ *       200:
+ *         description: Schedules retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 count:
+ *                   type: integer
+ *                 schedules:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Schedule'
+ *       400:
+ *         description: Invalid month parameter
+ *       404:
+ *         description: Trip not found
+ *       500:
+ *         description: Internal server error
+ */
+
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Schedule:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: "6af43023042585ddcb195056"
+ *         id:
+ *           type: integer
+ *           example: 1
+ *         tripId:
+ *           type: string
+ *           example: alpine-panorama
+ *         departureTime:
+ *           type: string
+ *           example: "08:30"
+ *         arrivalTime:
+ *           type: string
+ *           example: "13:00"
+ *         daysOfWeek:
+ *           type: array
+ *           items:
+ *             type: string
+ *         status:
+ *           type: boolean
+ *           example: true
+ *
+ *     ApiError:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: Trip not found
+ */
+
+
+
+router.get(
+    "/trips/:tripId/schedules",
+    (req, res) => {
+        if (req.query.month !== undefined) {
+            return getSchedulesForTripAndMonth(req, res);
+        }
+
+        return getSchedulesForTrip(req, res);
+    }
+);
 
 
 /**

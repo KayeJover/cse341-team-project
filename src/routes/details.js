@@ -1,6 +1,5 @@
 
 import { getTripById } from "../models/trips.js";
-import { getDb } from "../db/connect.js";
 
 export default async (req, res) => {
     try {
@@ -12,13 +11,6 @@ export default async (req, res) => {
                 title: "Trip Not Found",
             });
         }
-
-        const db = getDb();
-
-        details.schedules = await db
-            .collection("schedules")
-            .find({ tripId })
-            .toArray();
 
         return res.render("trips/details", {
             title: "Trip Details",
