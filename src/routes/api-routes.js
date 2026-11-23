@@ -9,7 +9,10 @@ import {
     logout,
 } from "../controllers/auth.js";
 
-import { requireAuth } from "../middleware/auth.js";
+import {
+    requireAuth,
+    requireApiRole,
+} from "../middleware/auth.js";
 
 import {
     getAllTrips,
@@ -392,11 +395,19 @@ router.get("/trains/:id", getTrainById);
  */
 
 // Bookings routes
-router.get("/bookings", getAllBookings);
+router.get("/bookings", requireApiRole("admin"), getAllBookings);
 router.get("/bookings/:bookingId", getBookingHandler);
 router.post("/bookings", createBookingHandler);
-router.put("/bookings/:bookingId", updateBookingHandler);
-router.delete("/bookings/:bookingId", deleteBookingHandler);
+router.put(
+    "/bookings/:bookingId",
+    requireApiRole("admin"),
+    updateBookingHandler
+);
+router.delete(
+    "/bookings/:bookingId",
+    requireApiRole("admin"),
+    deleteBookingHandler
+);
 
 // ==========================================
 // EXPORT ROUTER

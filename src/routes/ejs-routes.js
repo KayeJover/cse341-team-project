@@ -5,6 +5,10 @@ import { trainsPage } from "./trains.js";
 import railTripsRouter from "./trips.js";
 import { bookingsPage } from "../controllers/bookings.js";
 import stationsRouter from "./stations.js";
+import {
+    requirePageLogin,
+    requirePageRole,
+} from "../middleware/auth.js";
 
 const router = Router();
 
@@ -36,7 +40,18 @@ router.get("/stations/:stationId", (req, res) => {
     });
 });
 
-router.get("/bookings", bookingsPage);
-router.get("/bookings-admin", bookingsPage);
+router.get(
+    "/bookings",
+    requirePageLogin(),
+    requirePageRole("admin"),
+    bookingsPage
+);
+
+router.get(
+    "/bookings-admin",
+    requirePageLogin(),
+    requirePageRole("admin"),
+    bookingsPage
+);
 
 export default router;
