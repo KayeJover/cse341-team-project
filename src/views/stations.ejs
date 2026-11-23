@@ -12,7 +12,16 @@
 <section class="stations-catalog">
     <div class="stations-state" id="stations-loading">Loading stations...</div>
     <div class="stations-state stations-error" id="stations-error" hidden></div>
-
+<div class="stations-filters">
+    <label for="stations-region-filter">Filter by region:</label>
+    <select id="stations-region-filter">
+        <option value="all">All regions</option>
+        <option value="central">Central</option>
+        <option value="northern">Northern</option>
+        <option value="kansai">Kansai</option>
+        <option value="hokkaido">Hokkaido</option>
+    </select>
+</div>
     <div class="stations-grid" id="stations-list"></div>
 
     <template id="station-card-template">
