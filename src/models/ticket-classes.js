@@ -10,7 +10,14 @@ const getTicketClassesForDay = async (day) => {
     }).lean();
 };
 
+const getTicketClassByClass = async (ticketClass) => {
+    return TicketClass.findOne({
+        class: ticketClass
+    }).lean();
+};
+
 export {
     getAllTicketClasses,
-    getTicketClassesForDay
+    getTicketClassesForDay,
+    getTicketClassByClass
 };
