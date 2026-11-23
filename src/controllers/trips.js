@@ -39,3 +39,43 @@ export async function getAllTrips(req, res) {
         });
     }
 }
+
+
+/**
+ * EJS controller: Render the trips list page.
+ * Trip data and filter options are loaded by client-side JavaScript.
+ */
+export function renderTripListPage(req, res) {
+    return res.render("trips/list", {
+        title: "Scenic Train Trips",
+    });
+}
+
+/**
+ * EJS controller: Render an individual trip details page.
+ * The trip itself is loaded here; schedules are loaded separately by the API.
+ */
+export async function renderTripDetailsPage(req, res) {
+    try {
+        const { tripId } = req.params;
+
+        const details = await findTripById(tripId);
+
+        if (!details) {
+            return res.status(404).render("errors/404", {
+                title: "Trip Not Found",
+            });
+        }
+
+        return res.render("trips/details", {
+            title: "Trip Details",
+            details,
+        });
+    } catch (error) {
+        console.error("Error retrieving trip details:", error);
+
+        return res.status(500).render("errors/500", {
+            title: "Server Error",
+        });
+    }
+}

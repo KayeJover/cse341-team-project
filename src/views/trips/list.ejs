@@ -1,35 +1,24 @@
+
 <%- include('../partials/header') %>
 
-    <h1><%- title %></h1>
+<h1><%= title %></h1>
 
-    <div id="filters">
-        <label for="region-filter">Search by Region:</label>
-        <select id="region-filter">
-            <option value="all">All Regions</option>
-            <% regions.forEach((region)=> { %>
-                <option value="<%= region %>" <%=query.region===region ? 'selected' : '' %>
-                    >
-                    <%= region.charAt(0).toUpperCase() + region.slice(1) %>
-                </option>
-                <% }); %>
-        </select>
+<div id="filters">
+    <label for="region-filter">Search by Region:</label>
+    <select id="region-filter">
+        <option value="all">All Regions</option>
+    </select>
 
-        <label for="season-filter">Search by Season:</label>
-        <select id="season-filter">
-            <option value="all">Any Season</option>
-            <% seasons.forEach((season)=> { %>
-                <option value="<%= season %>" <%=query.season===season ? 'selected' : '' %>
-                    >
-                    <%= season.charAt(0).toUpperCase() + season.slice(1) %>
-                </option>
-                <% }); %>
-        </select>
-    </div>
+    <label for="season-filter">Search by Season:</label>
+    <select id="season-filter">
+        <option value="all">Any Season</option>
+    </select>
+</div>
 
-    <div class="routes-grid" id="routes-grid">
-        <p id="trips-loading">Loading trips...</p>
-    </div>
+<div class="routes-grid" id="routes-grid">
+    <p id="trips-loading">Loading trips...</p>
+</div>
 
-    <script src="/js/trips.js" defer></script>
+<script src="/js/trips.js" defer></script>
 
-    <%- include('../partials/footer') %>
+<%- include('../partials/footer') %>

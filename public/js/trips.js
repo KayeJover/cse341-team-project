@@ -15,13 +15,63 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const data = await response.json();
+
+            if (!Array.isArray(data.trips)) {
+                throw new Error("Invalid trips API response.");
+            }
+
             trips = data.trips;
 
+            populateFilters();
             renderTrips();
         } catch (error) {
             console.error("Error loading trips:", error);
             routesGrid.innerHTML = "<p>Unable to load trips. Please try again later.</p>";
         }
+    }
+
+    function populateFilters() {
+        const regions = [
+            ...new Set(trips.map((trip) => trip.region).filter(Boolean)),
+        ].sort();
+
+        const seasons = [
+            ...new Set(trips.map((trip) => trip.bestSeason).filter(Boolean)),
+        ].sort();
+
+        // Populate region filter
+        regionFilter.replaceChildren();
+
+        const allRegionsOption = document.createElement("option");
+        allRegionsOption.value = "all";
+        allRegionsOption.textContent = "All Regions";
+        regionFilter.appendChild(allRegionsOption);
+
+        regions.forEach((region) => {
+            const option = document.createElement("option");
+            option.value = region;
+            option.textContent =
+                region.charAt(0).toUpperCase() + region.slice(1);
+
+            regionFilter.appendChild(option);
+        });
+
+        // Populate season filter
+        seasonFilter.replaceChildren();
+
+        const allSeasonsOption = document.createElement("option");
+        allSeasonsOption.value = "all";
+        allSeasonsOption.textContent = "Any Season";
+        seasonFilter.appendChild(allSeasonsOption);
+
+        seasons.forEach((season) => {
+            const option = document.createElement("option");
+            option.value = season;
+            option.textContent =
+                season.charAt(0).toUpperCase() + season.slice(1);
+
+            seasonFilter.appendChild(option);
+        });
     }
 
     function renderTrips() {
@@ -86,12 +136,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             <div class="highlights">
               <div class="highlights-list">
-                ${trip.highlights
-                        .map(
-                            (highlight) =>
-                                `<span class="highlight-tag">${escapeHTML(highlight)}</span>`,
-                        )
-                        .join("")}
+                ${(trip.highlights || [])
+                    .map(
+                        (highlight) =>
+                            `<span class="highlight-tag">${escapeHTML(highlight)}</span>`,
+                    )
+                    .join("")}
               </div>
             </div>
 
