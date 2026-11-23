@@ -14,6 +14,13 @@
         <section class="ticket-selection">
             <h2 class="section-title">Select Your Ticket</h2>
             
+          <p id="ticketAvailabilityStatus" role="status" aria-live="polite">
+            Checking ticket availability…
+          </p>
+          <button id="retryTicketAvailability" type="button" hidden>Retry</button>
+
+
+
             <div class="ticket-options">
                 <% if (ticketOptions) { %>
                     <% ticketOptions.forEach((ticket, index) => { %>
@@ -27,6 +34,7 @@
                                 data-price="<%= ticket.price %>"
                                 <%= index === 1 ? 'checked' : '' %>
                                 required
+                                disabled
                             >
                             <div class="ticket-content">
                                 <div class="ticket-header">
@@ -181,7 +189,7 @@
 
         <div class="form-actions">
             <a href="/trips/<%= schedule.tripId %>" class="btn btn-secondary">Cancel</a>
-            <button type="submit" class="btn btn-primary">Confirm Booking</button>
+            <button type="submit" class="btn btn-primary" disabled>Confirm Booking</button>
         </div>
     </form>
 </article>
@@ -208,6 +216,147 @@
         const total = ticketPrice * passengerCount;
         totalAmount.textContent = `¥${total.toLocaleString()}`;
     };
+
+    const bookingForm = document.querySelector('.booking-form');
+    const submitButton = bookingForm.querySelector('button[type="submit"]');
+    const availabilityStatus = document.getElementById(
+        'ticketAvailabilityStatus'
+    );
+
+    const retryAvailabilityButton = document.getElementById(
+            'retryTicketAvailability'
+        );
+
+    let availabilityReady = false;
+    let availabilityRequestId = 0;
+
+    const syncTicketSummary = () => {
+        const selected = document.querySelector(
+            'input[name="ticketClass"]:checked:not(:disabled)'
+        );
+
+        selectedTicketName.textContent = selected
+            ? selected.dataset.name
+            : 'Select an available ticket';
+
+        ticketPrice = selected ? Number(selected.dataset.price) : 0;
+
+        updateSummary();
+
+        submitButton.disabled = !availabilityReady || !selected;
+    };
+
+    const updateTicketAvailability = async () => {
+        const requestId = ++availabilityRequestId;
+        retryAvailabilityButton.hidden = true;
+        const selectedDay = document.querySelector(
+            'input[name="selectedDay"]:checked'
+        );
+
+        availabilityReady = false;
+
+        ticketRadios.forEach((radio) => {
+            radio.disabled = true;
+            radio.closest('.ticket-card').classList.add('unavailable');
+        });
+
+        syncTicketSummary();
+
+        if (!selectedDay) {
+            availabilityStatus.textContent = 'Select a day to see available tickets.';
+            return;
+        }
+
+        availabilityStatus.textContent = 'Checking ticket availability…';
+
+        // The API expects lowercase full weekday names.
+        const day = selectedDay.value.trim().toLowerCase();
+
+        try {
+            const response = await fetch(
+                `/api/ticket-classes?day=${encodeURIComponent(day)}`
+            );
+
+            if (!response.ok) {
+                throw new Error(`Availability request failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (
+                !Array.isArray(data.ticketClasses) ||
+                !data.ticketClasses.every(
+                    (ticket) => ticket && typeof ticket.class === 'string'
+                )
+            ) {
+                throw new Error('Invalid ticket availability response.');
+            }
+
+            // Ignore an older response if the user has changed days again.
+            if (requestId !== availabilityRequestId) {
+                return;
+            }
+
+            const availableClasses = new Set(
+                data.ticketClasses.map((ticket) => ticket.class)
+            );
+
+            ticketRadios.forEach((radio) => {
+                const available = availableClasses.has(radio.value);
+
+                radio.disabled = !available;
+
+                radio.closest('.ticket-card').classList.toggle(
+                    'unavailable',
+                    !available
+                );
+
+                if (!available) {
+                    radio.checked = false;
+                    radio.removeAttribute('checked');
+                }
+            });
+
+            availabilityReady = true;
+
+            const hasAvailableTickets = Array.from(ticketRadios).some(
+                (radio) => !radio.disabled
+            );
+
+            availabilityStatus.textContent = hasAvailableTickets
+                ? 'Ticket availability updated. Unavailable classes are disabled.'
+                : 'No ticket classes are available for this day.';
+
+            syncTicketSummary();
+        } catch (error) {
+            if (requestId !== availabilityRequestId) {
+                return;
+            }
+
+            console.error('Unable to check ticket availability:', error);
+
+            availabilityStatus.textContent =
+                'Unable to check ticket availability. Click Retry to try again.';
+            retryAvailabilityButton.hidden = false;
+
+            syncTicketSummary();
+        }
+    };
+
+    retryAvailabilityButton.addEventListener('click', updateTicketAvailability);
+
+    bookingForm.addEventListener('submit', (event) => {
+        const selected = document.querySelector(
+            'input[name="ticketClass"]:checked:not(:disabled)'
+        );
+
+        if (!availabilityReady || !selected) {
+            event.preventDefault();
+
+            availabilityStatus.textContent =
+                'Please select a day and an available ticket before booking.';
+        }
+    });
 
     const updatePassengerNumbers = () => {
         const cards = document.querySelectorAll('.passenger-card');
@@ -388,20 +537,17 @@
 
     // Event Listeners
     selectedDayLabels.forEach((label) => {
-        label.addEventListener('click', (e) => {
-            e.preventDefault();
-            const label = e.currentTarget;
+        const radio = label.querySelector('input');
 
-            // Update visual and input selection
-            selectedDayLabels.forEach((lbl) => {
-                lbl.classList.remove('selected');
-                lbl.querySelector('input').checked = false;
-                lbl.querySelector('input').removeAttribute('checked');
+        radio.addEventListener('change', () => {
+            selectedDayLabels.forEach((dayLabel) => {
+                dayLabel.classList.toggle(
+                    'selected',
+                    dayLabel.querySelector('input').checked
+                );
             });
 
-            label.classList.add('selected');
-            label.querySelector('input').checked = true;
-            label.querySelector('input').setAttribute('checked', true);
+            updateTicketAvailability();
         });
     });
 
@@ -416,26 +562,7 @@
     });
 
     ticketRadios.forEach((radio) => {
-        radio.addEventListener('change', (e) => {
-            e.preventDefault();
-            const selected = e.currentTarget;
-
-            // Update visual and input selection
-            ticketRadios.forEach((input) => {
-                input.checked = false;
-                input.removeAttribute('checked');
-            });
-
-            selected.checked = true;
-            selected.setAttribute('checked', true);
-
-            // Update summary
-            const ticketName = e.target.dataset.name;
-            ticketPrice = parseInt(e.target.dataset.price);
-            
-            selectedTicketName.textContent = ticketName;
-            updateSummary();
-        });
+        radio.addEventListener('change', syncTicketSummary);
     });
 
     document.getElementById('autofill').addEventListener('click', (e) => {
@@ -443,14 +570,8 @@
         autoFillForm();
     });
 
-    // Initialize ticket based on default selection
-    const selectedRadio = document.querySelector('input[name="ticketClass"]:checked');
-    if (selectedRadio) {
-        const ticketName = selectedRadio.dataset.name;
-        selectedTicketName.textContent = ticketName;
-        ticketPrice = parseInt(selectedRadio.dataset.price);
-    }
-    updateSummary();
+    // Check availability for the initially selected day.
+    updateTicketAvailability();
 </script>
 
 <%- include('../partials/footer') %>

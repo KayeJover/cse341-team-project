@@ -1,4 +1,4 @@
-
+// src/models/schemas/bookings.js
 import mongoose from "mongoose";
 
 const passengerSchema = new mongoose.Schema(
