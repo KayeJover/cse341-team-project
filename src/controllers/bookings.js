@@ -117,9 +117,27 @@ export const getAllBookings = async (req, res, next) => {
     try {
         const bookings = await getAllBookingsFromModel(bookingAccessFilter(req.user));
 
+        // Administrators can view all bookings.
+        if (req.user.role === "admin") {
+            return res.status(200).json({
+                count: bookings.length,
+                bookings,
+            });
+        }
+
+        // Customers can only view bookings containing their email.
+        const userEmail = req.user.email.toLowerCase();
+
+        const userBookings = bookings.filter((booking) =>
+            booking.passengers.some(
+                (passenger) =>
+                    passenger.email.toLowerCase() === userEmail
+            )
+        );
+
         return res.status(200).json({
-            count: bookings.length,
-            bookings,
+            count: userBookings.length,
+            bookings: userBookings,
         });
     } catch (error) {
         return next(error);

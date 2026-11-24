@@ -16,8 +16,11 @@ import {
 
 import railTripsRouter from "./trips.js";
 
-import { requirePageLogin } from "../middleware/auth.js";
 import { bookingsPage } from "../controllers/bookings.js";
+import {
+    requirePageLogin,
+    requirePageRole,
+} from "../middleware/auth.js";
 
 const router = Router();
 
@@ -33,6 +36,19 @@ router.get("/login", (req, res) => {
         title: "Login",
     });
 });
+
+// Standard user dashboard
+router.get(
+    "/dashboard",
+    requirePageLogin(),
+    requirePageRole("customer"),
+    (req, res) => {
+        res.render("user-dashboard", {
+            title: "My Dashboard",
+            user: req.session.user,
+        });
+    }
+);
 
 // Home page
 router.get("/", homePage);

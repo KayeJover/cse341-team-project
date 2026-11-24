@@ -601,6 +601,7 @@ router.get("/ticket-classes", (req, res) => {
 
     return getAllTicketClasses(req, res);
 });
+
 // Bookings API
 router.get("/bookings", requireApiLogin(), getAllBookings);
 router.get("/bookings/:bookingId", requireApiLogin(), getBookingHandler);
