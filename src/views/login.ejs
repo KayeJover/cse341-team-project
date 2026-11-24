@@ -54,7 +54,8 @@
                 }
 
                 message.textContent = 'Login successful! Redirecting...';
-                window.location.href = '/';
+                window.location.href =
+                data.user.role === "admin" ? "/admin" : "/dashboard";
             } catch (error) {
                 message.textContent = error.message;
             } finally {
