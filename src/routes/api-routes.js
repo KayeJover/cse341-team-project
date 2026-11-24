@@ -605,6 +605,7 @@ router.get("/ticket-classes", (req, res) => {
 // Bookings API
 router.get("/bookings", requireApiLogin(), getAllBookings);
 router.get("/bookings/:bookingId", requireApiLogin(), getBookingHandler);
+// Public booking creation supports guest checkout.
 router.post("/bookings", createBookingHandler);
 router.put("/bookings/:bookingId", requireApiLogin(), updateBookingHandler);
 router.delete("/bookings/:bookingId", requireApiLogin(), deleteBookingHandler);

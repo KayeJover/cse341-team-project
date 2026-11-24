@@ -351,9 +351,9 @@ describe("Bookings API", () => {
         await admin.get("/admin").expect(200).expect(/href="\/bookings-admin"/);
         await customer.get("/bookings-admin").expect(200);
 
-        await customer.get(`/api/bookings/${otherId}`).expect(403);
-        await customer.put(`/api/bookings/${otherId}`).send({ status: "cancelled" }).expect(403);
-        await customer.delete(`/api/bookings/${otherId}`).expect(403);
+        await customer.get(`/api/bookings/${otherId}`).expect(404);
+        await customer.put(`/api/bookings/${otherId}`).send({ status: "cancelled" }).expect(404);
+        await customer.delete(`/api/bookings/${otherId}`).expect(404);
 
         await admin.put(`/api/bookings/${otherId}`).send({ status: "cancelled" }).expect(200);
         await admin.delete(`/api/bookings/${otherId}`).expect(200);

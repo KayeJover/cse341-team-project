@@ -104,11 +104,7 @@ const bookingAccessFilter = (user) => {
     return { "passengers.email": new RegExp(`^${escapedEmail}$`, "i") };
 };
 
-const respondToMissingAccessibleBooking = async (res, id) => {
-    if (await getBookingById(id)) {
-        return res.status(403).json({ message: "You cannot access this booking." });
-    }
-
+const respondToMissingAccessibleBooking = (res) => {
     return res.status(404).json({ message: "Booking not found." });
 };
 
@@ -250,7 +246,7 @@ export const updateBookingHandler = async (req, res, next) => {
         const existingBooking = await getBookingById(bookingId, filter);
 
         if (!existingBooking) {
-            return await respondToMissingAccessibleBooking(res, bookingId);
+            return respondToMissingAccessibleBooking(res);
         }
 
         if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
