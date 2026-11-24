@@ -24,8 +24,9 @@
         Loading bookings...
     </div>
 
-    <div id="bookings-error" class="bookings-state bookings-error" hidden>
+    <div id="bookings-error" class="bookings-state bookings-error" role="alert" hidden>
     </div>
+    <p id="bookings-feedback" role="status" hidden></p>
 
     <div class="bookings-table-wrapper">
         <table class="bookings-table">
@@ -39,6 +40,7 @@
                     <th>Total Amount</th>
                     <th>Status</th>
                     <th>Created</th>
+                    <th scope="col">Actions</th>
                 </tr>
             </thead>
 
@@ -58,6 +60,19 @@
             <td data-field="amount"></td>
             <td data-field="status"></td>
             <td data-field="created"></td>
+            <td>
+                <form class="booking-actions">
+                    <label>
+                        Status
+                        <select name="status">
+                            <option value="confirmed">Confirmed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </label>
+                    <button type="submit">Save status</button>
+                    <button type="button" data-action="delete">Delete</button>
+                </form>
+            </td>
         </tr>
     </template>
 

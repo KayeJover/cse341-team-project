@@ -1,12 +1,12 @@
 // src/models/bookings.js
 import Booking from "./schemas/bookings.js";
 
-export async function getAllBookings() {
-    return Booking.find({}).sort({ createdAt: -1 }).lean();
+export async function getAllBookings(filter = {}) {
+    return Booking.find(filter).sort({ createdAt: -1 }).lean();
 }
 
-export async function getBookingById(id) {
-    return Booking.findOne({ id }).lean();
+export async function getBookingById(id, filter = {}) {
+    return Booking.findOne({ ...filter, id }).lean();
 }
 
 export async function createBooking(bookingData) {
@@ -14,9 +14,9 @@ export async function createBooking(bookingData) {
     return booking.save();
 }
 
-export async function updateBooking(id, updates) {
+export async function updateBooking(id, updates, filter) {
     return Booking.findOneAndUpdate(
-        { id },
+        { ...filter, id },
         { $set: updates },
         {
            returnDocument: "after", runValidators: true
@@ -24,6 +24,6 @@ export async function updateBooking(id, updates) {
     ).lean();
 }
 
-export async function deleteBooking(id) {
-    return Booking.findOneAndDelete({ id }).lean();
+export async function deleteBooking(id, filter) {
+    return Booking.findOneAndDelete({ ...filter, id }).lean();
 }

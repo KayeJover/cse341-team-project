@@ -1,8 +1,9 @@
 
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import request from "supertest";
 
 import app from "../app.js";
+import initializeRoles from "../src/db/seed-roles.js";
 import { getDb } from "../src/db/connect.js";
 
 const validBooking = {
@@ -19,7 +20,41 @@ const validBooking = {
     ],
 };
 
+const signIn = async (username, email, role = "customer") => {
+    const agent = request.agent(app);
+    const password = "Rail-test-password42";
+    await agent.post("/api/auth/register")
+        .send({ displayName: username, username, email, password })
+        .expect(201);
+
+    if (role === "admin") {
+        const db = getDb();
+        const adminRole = await db.collection("roles").findOne({ name: "admin" });
+        await db.collection("users").updateOne(
+            { username },
+            { $set: { role: adminRole._id } }
+        );
+    }
+
+    await agent.post("/api/auth/login").send({ username, password }).expect(200);
+    return agent;
+};
+
 describe("Bookings API", () => {
+    beforeEach(async () => {
+        await initializeRoles();
+    });
+
+    test("GET /api/bookings returns all bookings", async () => {
+        const admin = await signIn("railadmin", "admin@example.com", "admin");
+
+        const response = await admin
+            .get("/api/bookings")
+            .expect(200);
+
+        expect(response.body).toHaveProperty("bookings");
+    });
+
     test("GET /api/bookings rejects unauthenticated users", async () => {
         const response = await request(app)
             .get("/api/bookings")
@@ -171,7 +206,8 @@ describe("Bookings API", () => {
 
         const bookingId = created.body.booking.id;
 
-        const response = await request(app)
+        const admin = await signIn("railadmin", "admin@example.com", "admin");
+        const response = await admin
             .get(`/api/bookings/${bookingId}`)
             .expect(200);
 
@@ -180,7 +216,8 @@ describe("Bookings API", () => {
     });
 
     test("GET /api/bookings/:bookingId returns 404 for an unknown booking", async () => {
-        const response = await request(app)
+        const admin = await signIn("railadmin", "admin@example.com", "admin");
+        const response = await admin
             .get("/api/bookings/nonexistent-booking")
             .expect(404);
 
@@ -195,7 +232,8 @@ describe("Bookings API", () => {
 
         const bookingId = created.body.booking.id;
 
-        const response = await request(app)
+        const admin = await signIn("railadmin", "admin@example.com", "admin");
+        const response = await admin
             .put(`/api/bookings/${bookingId}`)
             .send({
                 status: "cancelled",
@@ -215,7 +253,8 @@ describe("Bookings API", () => {
 
         const bookingId = created.body.booking.id;
 
-        const response = await request(app)
+        const admin = await signIn("railadmin", "admin@example.com", "admin");
+        const response = await admin
             .put(`/api/bookings/${bookingId}`)
             .send({
                 ticketClass: "premium",
@@ -243,7 +282,8 @@ describe("Bookings API", () => {
             .send(validBooking)
             .expect(201);
 
-        const response = await request(app)
+        const admin = await signIn("railadmin", "admin@example.com", "admin");
+        const response = await admin
             .put(`/api/bookings/${created.body.booking.id}`)
             .send({
                 status: "pending",
@@ -261,7 +301,8 @@ describe("Bookings API", () => {
 
         const bookingId = created.body.booking.id;
 
-        const response = await request(app)
+        const admin = await signIn("railadmin", "admin@example.com", "admin");
+        const response = await admin
             .delete(`/api/bookings/${bookingId}`)
             .expect(200);
 
@@ -269,16 +310,58 @@ describe("Bookings API", () => {
             "Booking deleted successfully."
         );
 
-        await request(app)
-            .get(`/api/bookings/${bookingId}`)
-            .expect(404);
+        await admin.get(`/api/bookings/${bookingId}`).expect(404);
     });
 
     test("DELETE /api/bookings/:bookingId returns 404 for an unknown booking", async () => {
-        const response = await request(app)
+        const admin = await signIn("railadmin", "admin@example.com", "admin");
+        const response = await admin
             .delete("/api/bookings/nonexistent-booking")
             .expect(404);
 
         expect(response.body.message).toBe("Booking not found.");
     });
+    test("requires authentication for the booking admin page and API operations", async () => {
+        const guest = request(app);
+        await guest.get("/bookings-admin").expect(302).expect("Location", "/login");
+        await guest.get("/bookings").expect(302).expect("Location", "/login");
+        await guest.get("/api/bookings").expect(401);
+        await guest.get("/api/bookings/unknown").expect(401);
+        await guest.put("/api/bookings/unknown").send({ status: "cancelled" }).expect(401);
+        await guest.delete("/api/bookings/unknown").expect(401);
+    });
+
+    test("customers can manage only bookings matching a passenger email", async () => {
+        const customer = await signIn("john", "john@example.com");
+        const admin = await signIn("railadmin", "admin@example.com", "admin");
+        const own = await request(app).post("/api/bookings").send(validBooking).expect(201);
+        const other = await request(app).post("/api/bookings").send({
+            ...validBooking,
+            passengers: [{ ...validBooking.passengers[0], email: "other@example.com" }],
+        }).expect(201);
+        const ownId = own.body.booking.id;
+        const otherId = other.body.booking.id;
+
+        const list = await customer.get("/api/bookings").expect(200);
+        expect(list.body.count).toBe(1);
+        expect(list.body.bookings.map(({ id }) => id)).toEqual([ownId]);
+
+        const adminList = await admin.get("/api/bookings").expect(200);
+        expect(adminList.body.count).toBe(2);
+        await admin.get("/admin").expect(200).expect(/href="\/bookings-admin"/);
+        await customer.get("/bookings-admin").expect(200);
+
+        await customer.get(`/api/bookings/${otherId}`).expect(404);
+        await customer.put(`/api/bookings/${otherId}`).send({ status: "cancelled" }).expect(404);
+        await customer.delete(`/api/bookings/${otherId}`).expect(404);
+
+        await admin.put(`/api/bookings/${otherId}`).send({ status: "cancelled" }).expect(200);
+        await admin.delete(`/api/bookings/${otherId}`).expect(200);
+
+        await customer.get(`/api/bookings/${ownId}`).expect(200);
+        await customer.put(`/api/bookings/${ownId}`).send({ status: "cancelled" }).expect(200);
+        await customer.delete(`/api/bookings/${ownId}`).expect(200);
+        await customer.get(`/api/bookings/${ownId}`).expect(404);
+    });
+
 });

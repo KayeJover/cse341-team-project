@@ -5,6 +5,10 @@ import initializeRoles from '../src/db/seed-roles.js';
 
 const connectionString = inject('MONGODB_TEST_URI');
 
+process.env.MONGODB_URI = connectionString;
+process.env.MONGODB_DB_NAME = 'kizuna-rail-test-sessions';
+process.env.SESSION_SECRET = 'booking-integration-test-secret';
+
 beforeAll(async () => {
   await connectToDb({
     connectionString,

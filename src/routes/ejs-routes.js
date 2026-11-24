@@ -87,7 +87,7 @@ router.get("/stations/:stationId", (req, res) => {
 });
 
 // Bookings pages
-router.get("/bookings", bookingsPage);
-router.get("/bookings-admin", bookingsPage);
+router.get("/bookings", requirePageLogin(), bookingsPage);
+router.get("/bookings-admin", requirePageLogin(), bookingsPage);
 
 export default router;

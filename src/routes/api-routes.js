@@ -3,15 +3,13 @@
 
 import { Router } from "express";
 
-import { requireApiLogin } from "../middleware/auth.js";
-
 import {
     register,
     login,
     logout,
 } from "../controllers/auth.js";
 
-import { requireAuth } from "../middleware/auth.js";
+import { requireApiLogin, requireAuth } from "../middleware/auth.js";
 
 import {
     getAllTrips,
@@ -388,7 +386,8 @@ router.get(
  * @swagger
  * /bookings:
  *   get:
- *     summary: Get all bookings
+ *     summary: Get bookings visible to the signed-in user
+ *     description: Administrators see all bookings. Other users see bookings listing their email as a passenger.
  *     tags: [Bookings]
  *     responses:
  *       200:
@@ -404,6 +403,8 @@ router.get(
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Booking'
+ *       401:
+ *         description: Sign-in required
  *       500:
  *         description: Server error
  *
@@ -439,6 +440,10 @@ router.get(
  *     responses:
  *       200:
  *         description: Booking found
+ *       401:
+ *         description: Sign-in required
+ *       403:
+ *         description: Booking is outside the signed-in user’s access
  *       404:
  *         description: Booking not found
  *       500:
@@ -480,6 +485,10 @@ router.get(
  *         description: Booking updated successfully
  *       400:
  *         description: Invalid update information
+ *       401:
+ *         description: Sign-in required
+ *       403:
+ *         description: Booking is outside the signed-in user’s access
  *       404:
  *         description: Booking not found
  *       500:
@@ -497,6 +506,10 @@ router.get(
  *     responses:
  *       200:
  *         description: Booking deleted successfully
+ *       401:
+ *         description: Sign-in required
+ *       403:
+ *         description: Booking is outside the signed-in user’s access
  *       404:
  *         description: Booking not found
  *       500:
@@ -591,10 +604,11 @@ router.get("/ticket-classes", (req, res) => {
 
 // Bookings API
 router.get("/bookings", requireApiLogin(), getAllBookings);
-router.get("/bookings/:bookingId", getBookingHandler);
+router.get("/bookings/:bookingId", requireApiLogin(), getBookingHandler);
+// Public booking creation supports guest checkout.
 router.post("/bookings", createBookingHandler);
-router.put("/bookings/:bookingId", updateBookingHandler);
-router.delete("/bookings/:bookingId", deleteBookingHandler);
+router.put("/bookings/:bookingId", requireApiLogin(), updateBookingHandler);
+router.delete("/bookings/:bookingId", requireApiLogin(), deleteBookingHandler);
 
 // ==========================================
 // EXPORT ROUTER
