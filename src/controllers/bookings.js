@@ -89,10 +89,33 @@ const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
 };
 
 
+// Apply the same passenger rule to reads and to the database write itself.
+const bookingAccessFilter = (user) => {
+    if (user.role === "admin") {
+        return {};
+    }
+
+    const email = typeof user.email === "string" ? user.email.trim() : "";
+    if (!email) {
+        return { _id: { $exists: false } };
+    }
+
+    const escapedEmail = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return { "passengers.email": new RegExp(`^${escapedEmail}$`, "i") };
+};
+
+const respondToMissingAccessibleBooking = async (res, id) => {
+    if (await getBookingById(id)) {
+        return res.status(403).json({ message: "You cannot access this booking." });
+    }
+
+    return res.status(404).json({ message: "Booking not found." });
+};
+
 // GET /api/bookings
 export const getAllBookings = async (req, res, next) => {
     try {
-        const bookings = await getAllBookingsFromModel();
+        const bookings = await getAllBookingsFromModel(bookingAccessFilter(req.user));
 
         return res.status(200).json({
             count: bookings.length,
@@ -106,12 +129,11 @@ export const getAllBookings = async (req, res, next) => {
 // GET /api/bookings/:bookingId
 export const getBookingHandler = async (req, res, next) => {
     try {
-        const booking = await getBookingById(req.params.bookingId);
+        const { bookingId } = req.params;
+        const booking = await getBookingById(bookingId, bookingAccessFilter(req.user));
 
         if (!booking) {
-            return res.status(404).json({
-                message: "Booking not found.",
-            });
+            return await respondToMissingAccessibleBooking(res, bookingId);
         }
 
         return res.status(200).json({ booking });
@@ -205,14 +227,16 @@ export const createBookingHandler = async (req, res, next) => {
 // PUT /api/bookings/:bookingId
 export const updateBookingHandler = async (req, res, next) => {
     try {
-        const existingBooking = await getBookingById(
-            req.params.bookingId
-        );
+        const { bookingId } = req.params;
+        const filter = bookingAccessFilter(req.user);
+        const existingBooking = await getBookingById(bookingId, filter);
 
         if (!existingBooking) {
-            return res.status(404).json({
-                message: "Booking not found.",
-            });
+            return await respondToMissingAccessibleBooking(res, bookingId);
+        }
+
+        if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+            return res.status(400).json({ message: "A booking update object is required." });
         }
 
         const {
@@ -349,16 +373,10 @@ export const updateBookingHandler = async (req, res, next) => {
                 details.unitPrice * updatedPassengers.length;
         }
 
-        const booking = await updateBooking(
-            req.params.bookingId,
-            updates
-        );
+        const booking = await updateBooking(bookingId, updates, filter);
 
-        // Confirm that the database returned the updated booking.
         if (!booking) {
-            return res.status(404).json({
-                message: "Booking not found.",
-            });
+            return await respondToMissingAccessibleBooking(res, bookingId);
         }
 
         return res.status(200).json({
@@ -379,12 +397,11 @@ export const updateBookingHandler = async (req, res, next) => {
 // DELETE /api/bookings/:bookingId
 export const deleteBookingHandler = async (req, res, next) => {
     try {
-        const booking = await deleteBooking(req.params.bookingId);
+        const { bookingId } = req.params;
+        const booking = await deleteBooking(bookingId, bookingAccessFilter(req.user));
 
         if (!booking) {
-            return res.status(404).json({
-                message: "Booking not found.",
-            });
+            return await respondToMissingAccessibleBooking(res, bookingId);
         }
 
         return res.status(200).json({

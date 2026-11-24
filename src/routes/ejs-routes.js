@@ -16,6 +16,7 @@ import {
 
 import railTripsRouter from "./trips.js";
 
+import { requirePageLogin } from "../middleware/auth.js";
 import { bookingsPage } from "../controllers/bookings.js";
 
 const router = Router();
@@ -57,7 +58,7 @@ router.get("/stations/:stationId", (req, res) => {
 });
 
 // Bookings pages
-router.get("/bookings", bookingsPage);
-router.get("/bookings-admin", bookingsPage);
+router.get("/bookings", requirePageLogin(), bookingsPage);
+router.get("/bookings-admin", requirePageLogin(), bookingsPage);
 
 export default router;

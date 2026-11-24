@@ -26,7 +26,14 @@ const changeBooking = async (bookingId, method, status) => {
         );
 
         if (!response.ok) {
-            const failure = await response.json().catch(() => null);
+            let failure = null;
+
+            try {
+                failure = await response.json();
+            } catch {
+                // Use the HTTP status message if the response is not valid JSON.
+            }
+
             throw new Error(
                 failure?.message || `Unable to change booking (${response.status}).`
             );
