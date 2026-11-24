@@ -3,6 +3,8 @@
 
 import { Router } from "express";
 
+import { requireApiLogin } from "../middleware/auth.js";
+
 import {
     register,
     login,
@@ -586,8 +588,9 @@ router.get("/ticket-classes", (req, res) => {
 
     return getAllTicketClasses(req, res);
 });
+
 // Bookings API
-router.get("/bookings", getAllBookings);
+router.get("/bookings", requireApiLogin(), getAllBookings);
 router.get("/bookings/:bookingId", getBookingHandler);
 router.post("/bookings", createBookingHandler);
 router.put("/bookings/:bookingId", updateBookingHandler);

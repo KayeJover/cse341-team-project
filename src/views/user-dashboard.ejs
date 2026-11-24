@@ -1,0 +1,18 @@
+
+<%- include("partials/header", { title: title }) %>
+
+<section class="content">
+    <h1>Welcome, <%= user.displayName %>!</h1>
+
+    <p>Welcome to your Kizuna Rail dashboard.</p>
+
+    <h2>My Bookings</h2>
+    <p>
+        <a href="/bookings-admin">Manage Bookings</a>
+    </p>
+    <div id="my-bookings">
+        <p>Loading your bookings...</p>
+    </div>
+</section>
+<script src="/js/user-dashboard.js" defer></script>
+<%- include("partials/footer") %>

@@ -20,14 +20,72 @@ const validBooking = {
 };
 
 describe("Bookings API", () => {
-    test("GET /api/bookings returns all bookings", async () => {
+    test("GET /api/bookings rejects unauthenticated users", async () => {
         const response = await request(app)
+            .get("/api/bookings")
+            .expect(401);
+
+        expect(response.body.message).toBe(
+            "Authentication required. Please log in."
+        );
+    });
+    test("GET /api/bookings returns only bookings belonging to the authenticated customer", async () => {
+        const username = `booking_test_${Date.now()}`;
+        const email = `${username}@example.com`;
+        const password = "BookingTest123!";
+
+        await request(app)
+            .post("/api/auth/register")
+            .send({
+                displayName: "Booking Test User",
+                username,
+                email,
+                password,
+            })
+            .expect(201);
+
+        // Create a booking containing this customer's email.
+        await request(app)
+            .post("/api/bookings")
+            .send({
+                ...validBooking,
+                passengers: [
+                    {
+                        ...validBooking.passengers[0],
+                        email,
+                    },
+                ],
+            })
+            .expect(201);
+
+        // Create another booking belonging to a different customer.
+        await request(app)
+            .post("/api/bookings")
+            .send(validBooking)
+            .expect(201);
+
+        const agent = request.agent(app);
+
+        await agent
+            .post("/api/auth/login")
+            .send({ username, password })
+            .expect(200);
+
+        const response = await agent
             .get("/api/bookings")
             .expect(200);
 
-        expect(response.body).toHaveProperty("count", 0);
-        expect(response.body.bookings).toEqual([]);
+        expect(response.body.count).toBe(1);
+        expect(response.body.bookings).toHaveLength(1);
+
+        expect(
+            response.body.bookings[0].passengers.some(
+                (passenger) => passenger.email === email
+            )
+        ).toBe(true);
     });
+
+
 
     test("POST /api/bookings creates a booking", async () => {
         const response = await request(app)
