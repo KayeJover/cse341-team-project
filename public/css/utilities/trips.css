@@ -302,3 +302,26 @@
         }
     }
 }
+/* W05 - Trip List Pagination */
+
+#pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-md);
+    margin: var(--space-xl) 0;
+}
+
+#pagination-controls button {
+    padding: var(--space-sm) var(--space-lg);
+    cursor: pointer;
+    border: 1px solid var(--clr-primary);
+    border-radius: var(--radius-md);
+    background-color: var(--clr-primary);
+    color: var(--clr-text-alt-primary);
+}
+
+#pagination-controls button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}

@@ -5,8 +5,26 @@ export async function getTripById(id) {
     return Trip.findOne({ id }).lean();
 }
 
-export async function getAllTrips() {
-    return Trip.find({}).lean();
+export async function getAllTrips(page = 1, limit = 3) {
+    const skip = (page - 1) * limit;
+
+    const [trips, total] = await Promise.all([
+        Trip.find({})
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+        Trip.countDocuments({})
+    ]);
+
+    return {
+        data: trips,
+        pagination: {
+            currentPage: page,
+            limit,
+            totalRecords: total,
+            totalPages: Math.ceil(total / limit)
+        }
+    };
 }
 
 export async function getTripFilters() {
