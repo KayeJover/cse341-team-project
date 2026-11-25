@@ -386,12 +386,22 @@ router.get(
  * @swagger
  * /bookings:
  *   get:
- *     summary: Get bookings visible to the signed-in user
- *     description: Administrators see all bookings. Other users see bookings listing their email as a passenger.
+ *     summary: Get paginated bookings visible to the signed-in user
+ *     description: Administrators see all bookings. Other users see bookings listing their email as a passenger. Results are sorted by booking date, newest first, with 10 bookings per page.
  *     tags: [Bookings]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number to retrieve. Defaults to 1.
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         example: 1
  *     responses:
  *       200:
- *         description: Bookings retrieved successfully
+ *         description: Paginated bookings retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -399,10 +409,34 @@ router.get(
  *               properties:
  *                 count:
  *                   type: integer
+ *                   example: 25
  *                 bookings:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Booking'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                       example: 1
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 3
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     totalBookings:
+ *                       type: integer
+ *                       example: 25
+ *                     hasNextPage:
+ *                       type: boolean
+ *                       example: true
+ *                     hasPreviousPage:
+ *                       type: boolean
+ *                       example: false
+ *       400:
+ *         description: Invalid page number. Page must be a positive integer.
  *       401:
  *         description: Sign-in required
  *       500:

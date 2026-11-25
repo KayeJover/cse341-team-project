@@ -1,8 +1,20 @@
 // src/models/bookings.js
 import Booking from "./schemas/bookings.js";
 
-export async function getAllBookings(filter = {}) {
-    return Booking.find(filter).sort({ createdAt: -1 }).lean();
+export async function getAllBookings(filter = {}, options = {}) {
+    const { page, limit } = options;
+
+    let query = Booking.find(filter).sort({ createdAt: -1 });
+
+    if (page && limit) {
+        query = query.skip((page - 1) * limit).limit(limit);
+    }
+
+    return query.lean();
+}
+
+export async function countBookings(filter = {}) {
+    return Booking.countDocuments(filter);
 }
 
 export async function getBookingById(id, filter = {}) {
@@ -19,7 +31,8 @@ export async function updateBooking(id, updates, filter) {
         { ...filter, id },
         { $set: updates },
         {
-           returnDocument: "after", runValidators: true
+            returnDocument: "after",
+            runValidators: true,
         }
     ).lean();
 }

@@ -26,6 +26,7 @@
 
     <div id="bookings-error" class="bookings-state bookings-error" role="alert" hidden>
     </div>
+
     <p id="bookings-feedback" role="status" hidden></p>
 
     <div class="bookings-table-wrapper">
@@ -50,6 +51,28 @@
         </table>
     </div>
 
+    <div id="bookings-pagination" class="bookings-pagination">
+        <button
+            type="button"
+            id="previous-page"
+            disabled
+        >
+            Previous
+        </button>
+
+        <span id="page-info" aria-live="polite">
+            Page 1 of 1
+        </span>
+
+        <button
+            type="button"
+            id="next-page"
+            disabled
+        >
+            Next
+        </button>
+    </div>
+
     <template id="booking-row-template">
         <tr>
             <td data-field="id"></td>
@@ -69,6 +92,7 @@
                             <option value="cancelled">Cancelled</option>
                         </select>
                     </label>
+
                     <button type="submit">Save status</button>
                     <button type="button" data-action="delete">Delete</button>
                 </form>

@@ -23,6 +23,7 @@ const validBooking = {
 const signIn = async (username, email, role = "customer") => {
     const agent = request.agent(app);
     const password = "Rail-test-password42";
+
     await agent.post("/api/auth/register")
         .send({ displayName: username, username, email, password })
         .expect(201);
@@ -30,6 +31,7 @@ const signIn = async (username, email, role = "customer") => {
     if (role === "admin") {
         const db = getDb();
         const adminRole = await db.collection("roles").findOne({ name: "admin" });
+
         await db.collection("users").updateOne(
             { username },
             { $set: { role: adminRole._id } }
@@ -53,6 +55,47 @@ describe("Bookings API", () => {
             .expect(200);
 
         expect(response.body).toHaveProperty("bookings");
+    }, 10000);
+
+    test("GET /api/bookings returns pagination metadata", async () => {
+        const admin = await signIn(
+            "paginationadmin",
+            "paginationadmin@example.com",
+            "admin"
+        );
+
+        const response = await admin
+            .get("/api/bookings?page=1")
+            .expect(200);
+
+        expect(response.body).toHaveProperty("bookings");
+        expect(response.body).toHaveProperty("pagination");
+
+        expect(response.body.pagination).toMatchObject({
+            currentPage: 1,
+            limit: 10,
+            totalBookings: response.body.count,
+        });
+
+        expect(response.body.bookings.length).toBeLessThanOrEqual(10);
+        expect(response.body.pagination.totalPages).toBeGreaterThanOrEqual(0);
+        expect(response.body.pagination.hasPreviousPage).toBe(false);
+    });
+
+    test("GET /api/bookings rejects an invalid page number", async () => {
+        const admin = await signIn(
+            "invalidpageadmin",
+            "invalidpageadmin@example.com",
+            "admin"
+        );
+
+        const response = await admin
+            .get("/api/bookings?page=0")
+            .expect(400);
+
+        expect(response.body.message).toBe(
+            "Page must be a positive integer."
+        );
     });
 
     test("GET /api/bookings rejects unauthenticated users", async () => {
@@ -64,6 +107,7 @@ describe("Bookings API", () => {
             "Authentication required. Please log in."
         );
     });
+
     test("GET /api/bookings returns only bookings belonging to the authenticated customer", async () => {
         const username = `booking_test_${Date.now()}`;
         const email = `${username}@example.com`;
@@ -79,7 +123,6 @@ describe("Bookings API", () => {
             })
             .expect(201);
 
-        // Create a booking containing this customer's email.
         await request(app)
             .post("/api/bookings")
             .send({
@@ -93,7 +136,6 @@ describe("Bookings API", () => {
             })
             .expect(201);
 
-        // Create another booking belonging to a different customer.
         await request(app)
             .post("/api/bookings")
             .send(validBooking)
@@ -119,8 +161,6 @@ describe("Bookings API", () => {
             )
         ).toBe(true);
     });
-
-
 
     test("POST /api/bookings creates a booking", async () => {
         const response = await request(app)
@@ -321,8 +361,10 @@ describe("Bookings API", () => {
 
         expect(response.body.message).toBe("Booking not found.");
     });
+
     test("requires authentication for the booking admin page and API operations", async () => {
         const guest = request(app);
+
         await guest.get("/bookings-admin").expect(302).expect("Location", "/login");
         await guest.get("/bookings").expect(302).expect("Location", "/login");
         await guest.get("/api/bookings").expect(401);
@@ -334,11 +376,25 @@ describe("Bookings API", () => {
     test("customers can manage only bookings matching a passenger email", async () => {
         const customer = await signIn("john", "john@example.com");
         const admin = await signIn("railadmin", "admin@example.com", "admin");
-        const own = await request(app).post("/api/bookings").send(validBooking).expect(201);
-        const other = await request(app).post("/api/bookings").send({
-            ...validBooking,
-            passengers: [{ ...validBooking.passengers[0], email: "other@example.com" }],
-        }).expect(201);
+
+        const own = await request(app)
+            .post("/api/bookings")
+            .send(validBooking)
+            .expect(201);
+
+        const other = await request(app)
+            .post("/api/bookings")
+            .send({
+                ...validBooking,
+                passengers: [
+                    {
+                        ...validBooking.passengers[0],
+                        email: "other@example.com",
+                    },
+                ],
+            })
+            .expect(201);
+
         const ownId = own.body.booking.id;
         const otherId = other.body.booking.id;
 
@@ -348,6 +404,7 @@ describe("Bookings API", () => {
 
         const adminList = await admin.get("/api/bookings").expect(200);
         expect(adminList.body.count).toBe(2);
+
         await admin.get("/admin").expect(200).expect(/href="\/bookings-admin"/);
         await customer.get("/bookings-admin").expect(200);
 
@@ -363,5 +420,4 @@ describe("Bookings API", () => {
         await customer.delete(`/api/bookings/${ownId}`).expect(200);
         await customer.get(`/api/bookings/${ownId}`).expect(404);
     });
-
 });
