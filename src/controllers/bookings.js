@@ -1,3 +1,4 @@
+
 // src/controllers/bookings.js
 import { getScheduleById } from "../models/schedules.js";
 import { getTripById } from "../models/trips.js";
@@ -9,6 +10,7 @@ import { generateConfirmationCode } from "../includes/helpers.js";
 
 import {
     getAllBookings as getAllBookingsFromModel,
+    countBookings,
     getBookingById,
     createBooking,
     updateBooking,
@@ -37,7 +39,6 @@ const validatePassengers = (passengers) => {
         passenger.phone.trim()
     );
 };
-
 
 const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
     // Retrieve schedule using the Schedule model
@@ -88,7 +89,6 @@ const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
     };
 };
 
-
 // Apply the same passenger rule to reads and to the database write itself.
 const bookingAccessFilter = (user) => {
     if (user.role === "admin") {
@@ -111,29 +111,36 @@ const respondToMissingAccessibleBooking = (res) => {
 // GET /api/bookings
 export const getAllBookings = async (req, res, next) => {
     try {
-        const bookings = await getAllBookingsFromModel(bookingAccessFilter(req.user));
+        const page = Number(req.query.page ?? 1);
+        const limit = 10;
 
-        // Administrators can view all bookings.
-        if (req.user.role === "admin") {
-            return res.status(200).json({
-                count: bookings.length,
-                bookings,
+        if (!Number.isInteger(page) || page < 1) {
+            return res.status(400).json({
+                message: "Page must be a positive integer.",
             });
         }
 
-        // Customers can only view bookings containing their email.
-        const userEmail = req.user.email.toLowerCase();
+        const filter = bookingAccessFilter(req.user);
 
-        const userBookings = bookings.filter((booking) =>
-            booking.passengers.some(
-                (passenger) =>
-                    passenger.email.toLowerCase() === userEmail
-            )
-        );
+        const totalBookings = await countBookings(filter);
+        const totalPages = Math.ceil(totalBookings / limit);
+
+        const bookings = await getAllBookingsFromModel(filter, {
+            page,
+            limit,
+        });
 
         return res.status(200).json({
-            count: userBookings.length,
-            bookings: userBookings,
+            count: totalBookings,
+            bookings,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                limit,
+                totalBookings,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1,
+            },
         });
     } catch (error) {
         return next(error);
@@ -236,7 +243,6 @@ export const createBookingHandler = async (req, res, next) => {
         return next(error);
     }
 };
-
 
 // PUT /api/bookings/:bookingId
 export const updateBookingHandler = async (req, res, next) => {
@@ -427,7 +433,6 @@ export const deleteBookingHandler = async (req, res, next) => {
     }
 };
 
-
 // GET /trips/booking/:scheduleId
 export const bookingPage = async (req, res, next) => {
     try {
@@ -448,7 +453,7 @@ export const bookingPage = async (req, res, next) => {
             });
         }
 
-       const ticketClasses = await getAllTicketClasses();
+        const ticketClasses = await getAllTicketClasses();
 
         const ticketOptions = ticketClasses.map((ticketClass) => ({
             class: ticketClass.class,
@@ -556,7 +561,6 @@ export const confirmationPage = async (req, res, next) => {
         return next(error);
     }
 };
-
 
 // GET /bookings-admin
 export const bookingsPage = (req, res) => {

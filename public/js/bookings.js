@@ -1,5 +1,25 @@
 
 let bookingChangePending = false;
+let currentPage = 1;
+let totalPages = 1;
+
+const updatePaginationControls = () => {
+    const previousButton = document.getElementById("previous-page");
+    const nextButton = document.getElementById("next-page");
+    const pageInfo = document.getElementById("page-info");
+
+    if (previousButton) {
+        previousButton.disabled = currentPage <= 1;
+    }
+
+    if (nextButton) {
+        nextButton.disabled = currentPage >= totalPages;
+    }
+
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+};
 
 const changeBooking = async (bookingId, method, status) => {
     const errorEl = document.getElementById("bookings-error");
@@ -15,7 +35,10 @@ const changeBooking = async (bookingId, method, status) => {
     }
 
     bookingChangePending = true;
-    controls.forEach((control) => { control.disabled = true; });
+    controls.forEach((control) => {
+        control.disabled = true;
+    });
+
     errorEl.hidden = true;
     feedbackEl.hidden = true;
 
@@ -35,20 +58,26 @@ const changeBooking = async (bookingId, method, status) => {
             }
 
             throw new Error(
-                failure?.message || `Unable to change booking (${response.status}).`
+                failure?.message ||
+                `Unable to change booking (${response.status}).`
             );
         }
 
-        feedbackEl.textContent = isUpdate ? "Booking updated." : "Booking deleted.";
+        feedbackEl.textContent = isUpdate
+            ? "Booking updated."
+            : "Booking deleted.";
+
         feedbackEl.hidden = false;
-        list.replaceChildren();
+
         await loadBookings();
     } catch (error) {
         errorEl.textContent = error.message;
         errorEl.hidden = false;
     } finally {
         bookingChangePending = false;
-        controls.forEach((control) => { control.disabled = false; });
+        controls.forEach((control) => {
+            control.disabled = false;
+        });
     }
 };
 
@@ -66,20 +95,35 @@ const loadBookings = async () => {
     errorEl.hidden = true;
 
     try {
-        const response = await fetch("/api/bookings");
+        const response = await fetch(
+            `/api/bookings?page=${currentPage}`
+        );
 
         if (!response.ok) {
-            throw new Error(`Failed to load bookings (${response.status})`);
+            throw new Error(
+                `Failed to load bookings (${response.status})`
+            );
         }
 
         const payload = await response.json();
         const bookings = payload.bookings || [];
+        const pagination = payload.pagination || {};
+
+        totalPages = Math.max(1, pagination.totalPages || 1);
+
+        // If the last booking on a page was deleted,
+        // return to the previous page.
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+            await loadBookings();
+            return;
+        }
 
         const totalEl = document.getElementById("total-bookings");
         const confirmedEl = document.getElementById("confirmed-bookings");
 
         if (totalEl) {
-            totalEl.textContent = bookings.length;
+            totalEl.textContent = pagination.totalBookings ?? payload.count ?? 0;
         }
 
         if (confirmedEl) {
@@ -130,21 +174,35 @@ const loadBookings = async () => {
 
                 const form = row.querySelector(".booking-actions");
                 const status = form.elements.namedItem("status");
+
                 status.value = booking.status;
-                form.setAttribute("aria-label", `Actions for booking ${booking.id}`);
+
+                form.setAttribute(
+                    "aria-label",
+                    `Actions for booking ${booking.id}`
+                );
 
                 form.addEventListener("submit", (event) => {
                     event.preventDefault();
+
                     if (!bookingChangePending && status.value) {
-                        changeBooking(booking.id, "PUT", status.value);
+                        changeBooking(
+                            booking.id,
+                            "PUT",
+                            status.value
+                        );
                     }
                 });
 
-                form.querySelector('[data-action="delete"]').addEventListener("click", () => {
-                    if (!bookingChangePending && window.confirm(`Delete booking ${booking.id}?`)) {
-                        changeBooking(booking.id, "DELETE");
-                    }
-                });
+                form.querySelector('[data-action="delete"]')
+                    .addEventListener("click", () => {
+                        if (
+                            !bookingChangePending &&
+                            window.confirm(`Delete booking ${booking.id}?`)
+                        ) {
+                            changeBooking(booking.id, "DELETE");
+                        }
+                    });
 
                 fragment.appendChild(row);
             });
@@ -152,22 +210,36 @@ const loadBookings = async () => {
             listEl.replaceChildren(fragment);
         }
 
-        if (loadingEl) {
-            loadingEl.hidden = true;
-        }
+        updatePaginationControls();
+
     } catch (error) {
         console.error("Error loading bookings:", error);
 
-        if (loadingEl) {
-            loadingEl.hidden = true;
-        }
-
-        if (errorEl) {
-            errorEl.hidden = false;
-            errorEl.textContent =
-                "Unable to load bookings right now. Please try again.";
-        }
+        errorEl.hidden = false;
+        errorEl.textContent =
+            "Unable to load bookings right now. Please try again.";
+    } finally {
+        loadingEl.hidden = true;
     }
 };
 
-document.addEventListener("DOMContentLoaded", loadBookings);
+document.addEventListener("DOMContentLoaded", () => {
+    const previousButton = document.getElementById("previous-page");
+    const nextButton = document.getElementById("next-page");
+
+    previousButton?.addEventListener("click", () => {
+        if (currentPage > 1) {
+            currentPage--;
+            loadBookings();
+        }
+    });
+
+    nextButton?.addEventListener("click", () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            loadBookings();
+        }
+    });
+
+    loadBookings();
+});
