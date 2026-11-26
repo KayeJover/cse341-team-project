@@ -3,17 +3,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const routesGrid = document.getElementById("routes-grid");
     const regionFilter = document.getElementById("region-filter");
     const seasonFilter = document.getElementById("season-filter");
+    const keywordSearch = document.getElementById("keyword-search");
+    const paginationControls =
+        document.getElementById("pagination-controls");
 
     let trips = [];
     let currentPage = 1;
     const pageSize = 3;
     let totalPages = 0;
+    let filtersLoaded = false;
+
+    const pageParams = new URLSearchParams(window.location.search);
+
+    const initialRegion = pageParams.get("region") || "all";
+    const initialSeason = pageParams.get("season") || "all";
+    const initialKeyword = pageParams.get("keyword") || "";
 
     async function loadTrips(page = 1) {
         try {
-            const response = await fetch(
-                `/api/trips?page=${page}&limit=${pageSize}`
-            );
+            const params = new URLSearchParams({
+                page,
+                limit: pageSize,
+                keyword: keywordSearch.value.trim(),
+                region: regionFilter.value,
+                season: seasonFilter.value,
+            });
+
+            const response = await fetch(`/api/trips?${params}`);
 
             if (!response.ok) {
                 throw new Error("Failed to load trips.");
@@ -29,83 +45,70 @@ document.addEventListener("DOMContentLoaded", () => {
             currentPage = result.pagination.currentPage;
             totalPages = result.pagination.totalPages;
 
+            if (result.filters && !filtersLoaded) {
+                populateFilters(result.filters);
+
+                // Reload using the initial URL filter values
+                if (
+                    initialRegion !== "all" ||
+                    initialSeason !== "all" ||
+                    initialKeyword !== ""
+                ) {
+                    await loadTrips(1);
+                    return;
+                }
+            }
             renderTrips();
             renderPagination();
-
         } catch (error) {
             console.error("Error loading trips:", error);
             routesGrid.innerHTML =
                 "<p>Unable to load trips. Please try again later.</p>";
+            paginationControls.replaceChildren();
         }
     }
 
-    function populateFilters() {
-        const regions = [
-            ...new Set(trips.map((trip) => trip.region).filter(Boolean)),
-        ].sort();
-
-        const seasons = [
-            ...new Set(trips.map((trip) => trip.bestSeason).filter(Boolean)),
-        ].sort();
-
-        // Populate region filter
-        regionFilter.replaceChildren();
-
-        const allRegionsOption = document.createElement("option");
-        allRegionsOption.value = "all";
-        allRegionsOption.textContent = "All Regions";
-        regionFilter.appendChild(allRegionsOption);
-
-        regions.forEach((region) => {
-            const option = document.createElement("option");
-            option.value = region;
-            option.textContent =
-                region.charAt(0).toUpperCase() + region.slice(1);
-
-            regionFilter.appendChild(option);
-        });
-
-        // Populate season filter
-        seasonFilter.replaceChildren();
-
-        const allSeasonsOption = document.createElement("option");
-        allSeasonsOption.value = "all";
-        allSeasonsOption.textContent = "Any Season";
-        seasonFilter.appendChild(allSeasonsOption);
-
-        seasons.forEach((season) => {
-            const option = document.createElement("option");
-            option.value = season;
-            option.textContent =
-                season.charAt(0).toUpperCase() + season.slice(1);
-
-            seasonFilter.appendChild(option);
-        });
-    }
-
-    function renderTrips() {
-        const selectedRegion = regionFilter.value;
-        const selectedSeason = seasonFilter.value;
-
-        const filteredTrips = trips.filter((trip) => {
-            const matchesRegion =
-                selectedRegion === "all" || trip.region === selectedRegion;
-
-            const matchesSeason =
-                selectedSeason === "all" || trip.bestSeason === selectedSeason;
-
-            return matchesRegion && matchesSeason;
-        });
-
-        if (filteredTrips.length === 0) {
-            routesGrid.innerHTML = "<p>No trips found matching your filters.</p>";
+    
+    function populateFilters(filters) {
+        // Populate dropdowns only once
+        if (filtersLoaded) {
             return;
         }
 
-        routesGrid.innerHTML = filteredTrips
+        regionFilter.replaceChildren(
+            new Option("All Regions", "all")
+        );
+
+        filters.regions.forEach((region) => {
+            regionFilter.add(new Option(region, region));
+        });
+
+        seasonFilter.replaceChildren(
+            new Option("Any Season", "all")
+        );
+
+        filters.seasons.forEach((season) => {
+            seasonFilter.add(new Option(season, season));
+        });
+
+        filtersLoaded = true;
+        regionFilter.value = initialRegion;
+        seasonFilter.value = initialSeason;
+        keywordSearch.value = initialKeyword;
+    }
+
+
+    function renderTrips() {
+        if (trips.length === 0) {
+            routesGrid.innerHTML =
+                "<p>No trips found matching your search.</p>";
+            return;
+        }
+
+        routesGrid.innerHTML = trips
             .map(
                 (trip) => `
-          <div class="route-card ${trip.region}">
+          <div class="route-card ${escapeHTML(trip.region)}">
             <div class="route-header">
               <h2 class="route-name">${escapeHTML(trip.name)}</h2>
               <span class="route-region">${escapeHTML(trip.region)}</span>
@@ -148,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${(trip.highlights || [])
                     .map(
                         (highlight) =>
-                            `<span class="highlight-tag">${escapeHTML(highlight)}</span>`,
+                            `<span class="highlight-tag">${escapeHTML(highlight)}</span>`
                     )
                     .join("")}
               </div>
@@ -160,15 +163,12 @@ document.addEventListener("DOMContentLoaded", () => {
               </a>
             </div>
           </div>
-        `,
+        `
             )
             .join("");
     }
 
     function renderPagination() {
-        const paginationControls =
-            document.getElementById("pagination-controls");
-
         if (totalPages <= 1) {
             paginationControls.replaceChildren();
             return;
@@ -180,9 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 Previous
             </button>
 
-            <span>
-                Page ${currentPage} of ${totalPages}
-            </span>
+            <span>Page ${currentPage} of ${totalPages}</span>
 
             <button id="next-page"
                 ${currentPage === totalPages ? "disabled" : ""}>
@@ -220,6 +218,10 @@ document.addEventListener("DOMContentLoaded", () => {
             return entities[character];
         });
     }
+
+    regionFilter.addEventListener("change", () => loadTrips(1));
+    seasonFilter.addEventListener("change", () => loadTrips(1));
+    keywordSearch.addEventListener("input", () => loadTrips(1));
 
     loadTrips(1);
 });
