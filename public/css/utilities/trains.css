@@ -128,3 +128,40 @@
         }
     }
 }
+
+.trains-catalog {
+    .trains-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: var(--space-md);
+        margin-top: var(--space-xl);
+        padding: var(--space-md);
+
+        button {
+            padding: var(--space-sm) var(--space-lg);
+            border: 1px solid #b8c7ef;
+            border-radius: var(--radius-sm);
+            background-color: #eef3ff;
+            color: var(--clr-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+
+            &:hover:not(:disabled) {
+                background-color: #dce6ff;
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+
+        span {
+            color: var(--clr-text-primary);
+            font-weight: 600;
+        }
+    }
+}

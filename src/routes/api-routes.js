@@ -176,6 +176,57 @@ router.get("/stations/:stationId", getStationById);
 // TRAINS API
 // ==========================================
 
+/**
+ * @swagger
+ * /trains:
+ *   get:
+ *     summary: Get all trains with pagination
+ *     tags: [Trains]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 10
+ *           default: 10
+ *         description: Number of trains per page
+ *     responses:
+ *       200:
+ *         description: Paginated list of trains
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 trains:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     totalItems:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     currentPage:
+ *                       type: integer
+ *                     itemsPerPage:
+ *                       type: integer
+ *       400:
+ *         description: Invalid pagination parameters
+ *       500:
+ *         description: Failed to fetch trains
+ */
+
 router.get("/trains", getAllTrains);
 router.get("/trains/:id", getTrainById);
 
