@@ -40,6 +40,15 @@ const validatePassengers = (passengers) => {
     );
 };
 
+// Validate optional special requests
+const validateSpecialRequests = (specialRequests) => {
+    return (
+        specialRequests === undefined ||
+        (typeof specialRequests === "string" &&
+            specialRequests.trim().length <= 500)
+    );
+};
+
 const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
     // Retrieve schedule using the Schedule model
     const schedule = await getScheduleById(scheduleId);
@@ -166,12 +175,13 @@ export const getBookingHandler = async (req, res, next) => {
 // POST /api/bookings
 export const createBookingHandler = async (req, res, next) => {
     try {
-        const {
-            scheduleId,
-            ticketClass,
-            selectedDay,
-            passengers,
-        } = req.body;
+       const {
+    scheduleId,
+    ticketClass,
+    selectedDay,
+    passengers,
+    specialRequests,
+} = req.body;
 
         const numericScheduleId = Number(scheduleId);
 
@@ -188,6 +198,8 @@ export const createBookingHandler = async (req, res, next) => {
             typeof ticketClass !== "string" ||
             typeof selectedDay !== "string" ||
             !validatePassengers(passengers)
+         || !validateSpecialRequests(specialRequests)
+
         ) {
             return res.status(400).json({
                 message: "Invalid booking or passenger information.",
@@ -211,6 +223,7 @@ export const createBookingHandler = async (req, res, next) => {
         const bookingData = {
             id: generateConfirmationCode(),
             ...details,
+            specialRequests: (specialRequests || "").trim(),
             passengers: passengers.map((passenger) => ({
                 firstName: passenger.firstName.trim(),
                 lastName: passenger.lastName.trim(),
@@ -481,6 +494,7 @@ export const processBookingRequest = async (req, res, next) => {
             ticketClass,
             selectedDay,
             passengers,
+            specialRequests,
         } = req.body;
 
         const numericScheduleId = Number(scheduleId);
@@ -491,6 +505,8 @@ export const processBookingRequest = async (req, res, next) => {
             typeof ticketClass !== "string" ||
             typeof selectedDay !== "string" ||
             !validatePassengers(passengers)
+         || !validateSpecialRequests(specialRequests)
+
         ) {
             return res.status(400).send("Invalid booking information.");
         }
@@ -510,6 +526,7 @@ export const processBookingRequest = async (req, res, next) => {
         const bookingData = {
             id: generateConfirmationCode(),
             ...details,
+            specialRequests: (specialRequests || "").trim(),
             passengers: passengers.map((passenger) => ({
                 firstName: passenger.firstName.trim(),
                 lastName: passenger.lastName.trim(),
