@@ -38,6 +38,7 @@ const hookSeasonSorter = () => {
 };
 
 // Trains catalog with pagination
+
 const hookTrainsCatalog = async () => {
     const listEl = document.getElementById('trains-list');
     const templateEl = document.getElementById('train-card-template');
@@ -48,18 +49,29 @@ const hookTrainsCatalog = async () => {
     const nextBtn = document.getElementById('trains-next');
     const pageInfoEl = document.getElementById('trains-page-info');
 
+    // Search elements
+    const searchForm = document.getElementById('trains-search-form');
+    const searchInput = document.getElementById('trains-search');
+
     if (!listEl || !templateEl) {
         return;
     }
 
     let currentPage = 1;
+    let currentSearch = '';
 
     const loadTrains = async (page) => {
         try {
             if (loadingEl) loadingEl.hidden = false;
             if (errorEl) errorEl.hidden = true;
 
-            const response = await fetch(`/api/trains?page=${page}&limit=10`);
+            const params = new URLSearchParams({
+                page: String(page),
+                limit: '10',
+                search: currentSearch,
+            });
+
+            const response = await fetch(`/api/trains?${params.toString()}`);
 
             if (!response.ok) {
                 throw new Error(`Failed to load trains (${response.status})`);
@@ -69,6 +81,16 @@ const hookTrainsCatalog = async () => {
             const trains = payload.trains || [];
             const pagination = payload.pagination;
             const fragment = document.createDocumentFragment();
+
+            if (trains.length === 0) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.className = 'trains-state';
+                emptyMessage.textContent = currentSearch
+                    ? 'No trains found matching your search.'
+                    : 'No trains are currently available.';
+
+                fragment.appendChild(emptyMessage);
+            }
 
             trains.forEach((train) => {
                 const card = templateEl.content.cloneNode(true);
@@ -93,7 +115,9 @@ const hookTrainsCatalog = async () => {
             currentPage = pagination.currentPage;
 
             if (pageInfoEl) {
-                pageInfoEl.textContent = `Page ${pagination.currentPage} of ${pagination.totalPages}`;
+                pageInfoEl.textContent = pagination.totalPages > 0
+                    ? `Page ${pagination.currentPage} of ${pagination.totalPages}`
+                    : 'No pages available';
             }
 
             if (previousBtn) {
@@ -119,6 +143,19 @@ const hookTrainsCatalog = async () => {
         }
     };
 
+    // Handle search form submission
+    if (searchForm && searchInput) {
+        searchForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            currentSearch = searchInput.value.trim();
+            currentPage = 1;
+
+            loadTrains(currentPage);
+        });
+    }
+
+    // Previous page
     if (previousBtn) {
         previousBtn.addEventListener('click', () => {
             if (currentPage > 1) {
@@ -127,14 +164,17 @@ const hookTrainsCatalog = async () => {
         });
     }
 
+    // Next page
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
             loadTrains(currentPage + 1);
         });
     }
 
+    // Initial train loading
     await loadTrains(currentPage);
 };
+
 
 const hookStationsCatalog = async () => {
     const listEl = document.getElementById('stations-list');
