@@ -5,28 +5,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const seasonFilter = document.getElementById("season-filter");
 
     let trips = [];
+    let currentPage = 1;
+    const pageSize = 3;
+    let totalPages = 0;
 
-    async function loadTrips() {
+    async function loadTrips(page = 1) {
         try {
-            const response = await fetch("/api/trips");
+            const response = await fetch(
+                `/api/trips?page=${page}&limit=${pageSize}`
+            );
 
             if (!response.ok) {
                 throw new Error("Failed to load trips.");
             }
 
-            const data = await response.json();
+            const result = await response.json();
 
-            if (!Array.isArray(data.trips)) {
+            if (!Array.isArray(result.data)) {
                 throw new Error("Invalid trips API response.");
             }
 
-            trips = data.trips;
+            trips = result.data;
+            currentPage = result.pagination.currentPage;
+            totalPages = result.pagination.totalPages;
 
-            populateFilters();
             renderTrips();
+            renderPagination();
+
         } catch (error) {
             console.error("Error loading trips:", error);
-            routesGrid.innerHTML = "<p>Unable to load trips. Please try again later.</p>";
+            routesGrid.innerHTML =
+                "<p>Unable to load trips. Please try again later.</p>";
         }
     }
 
@@ -156,6 +165,48 @@ document.addEventListener("DOMContentLoaded", () => {
             .join("");
     }
 
+    function renderPagination() {
+        const paginationControls =
+            document.getElementById("pagination-controls");
+
+        if (totalPages <= 1) {
+            paginationControls.replaceChildren();
+            return;
+        }
+
+        paginationControls.innerHTML = `
+            <button id="previous-page"
+                ${currentPage === 1 ? "disabled" : ""}>
+                Previous
+            </button>
+
+            <span>
+                Page ${currentPage} of ${totalPages}
+            </span>
+
+            <button id="next-page"
+                ${currentPage === totalPages ? "disabled" : ""}>
+                Next
+            </button>
+        `;
+
+        document
+            .getElementById("previous-page")
+            .addEventListener("click", () => {
+                if (currentPage > 1) {
+                    loadTrips(currentPage - 1);
+                }
+            });
+
+        document
+            .getElementById("next-page")
+            .addEventListener("click", () => {
+                if (currentPage < totalPages) {
+                    loadTrips(currentPage + 1);
+                }
+            });
+    }
+
     function escapeHTML(value) {
         return String(value ?? "").replace(/[&<>"']/g, (character) => {
             const entities = {
@@ -170,8 +221,5 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    regionFilter.addEventListener("change", renderTrips);
-    seasonFilter.addEventListener("change", renderTrips);
-
-    loadTrips();
+    loadTrips(1);
 });
