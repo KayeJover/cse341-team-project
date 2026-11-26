@@ -1,4 +1,5 @@
 
+
 import { describe, expect, test } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
@@ -14,18 +15,21 @@ describe('GET /api/stations', () => {
     expect(response.body.stations).toBeInstanceOf(Array);
   });
 
-  test('returns the stations from the starter data', async () => {
+  test('returns all 12 stations from the starter data', async () => {
     const response = await request(app).get('/api/stations');
 
     expect(response.status).toBe(200);
     expect(response.body.stations).toHaveLength(12);
+
     expect(response.body.stations).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: 'nagoya',
           name: 'Nagoya Station',
           prefecture: 'Aichi',
-          region: 'central'
+          region: 'central',
+          facilities: expect.arrayContaining(['restaurant', 'shop']),
+          description: 'Major transportation hub in central Japan.'
         })
       ])
     );
@@ -48,7 +52,11 @@ describe('GET /api/stations', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: 'test-station',
-          name: 'Test Station'
+          name: 'Test Station',
+          prefecture: 'Test Prefecture',
+          region: 'central',
+          facilities: ['restroom'],
+          description: 'A station for testing.'
         })
       ])
     );
@@ -58,23 +66,38 @@ describe('GET /api/stations', () => {
     const response = await request(app).get('/api/stations?region=central');
 
     expect(response.status).toBe(200);
-    expect(response.body.stations.length).toBeGreaterThan(0);
+    expect(response.body.stations).toHaveLength(4);
+
     expect(response.body.stations.every(
       (station) => station.region === 'central'
     )).toBe(true);
+
+    expect(response.body.stations.map((station) => station.id)).toEqual(
+      expect.arrayContaining([
+        'nagoya',
+        'toyama',
+        'unazuki',
+        'keyakidaira'
+      ])
+    );
   });
 });
 
 describe('GET /api/stations/:stationId', () => {
-  test('returns one station by ID', async () => {
+  test('returns one station by ID with its complete details', async () => {
     const response = await request(app).get('/api/stations/nagoya');
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('station');
+
     expect(response.body.station).toEqual(
       expect.objectContaining({
         id: 'nagoya',
-        name: 'Nagoya Station'
+        name: 'Nagoya Station',
+        prefecture: 'Aichi',
+        region: 'central',
+        facilities: expect.arrayContaining(['restaurant', 'shop']),
+        description: 'Major transportation hub in central Japan.'
       })
     );
   });
@@ -83,6 +106,8 @@ describe('GET /api/stations/:stationId', () => {
     const response = await request(app).get('/api/stations/unknown');
 
     expect(response.status).toBe(404);
-    expect(response.body).toEqual({ error: 'Station not found' });
+    expect(response.body).toEqual({
+      error: 'Station not found'
+    });
   });
 });
