@@ -2,6 +2,19 @@
 
 <section class="content">
     <h1>User Admin</h1>
+    <form id="users-filters">
+        <label for="users-role">Role</label>
+        <select id="users-role" name="role">
+            <option value="">All roles</option>
+            <option value="admin">Admin</option>
+            <option value="customer">Customer</option>
+        </select>
+        <label for="users-search">Search by display name, username, or email</label>
+        <input type="search" id="users-search" name="search" maxlength="100">
+        <button type="submit">Search</button>
+        <button type="reset">Clear filters</button>
+    </form>
+
     <p id="users-status" role="status"></p>
     <p id="users-error" role="alert" hidden></p>
     <button type="button" id="users-retry" hidden>Retry</button>

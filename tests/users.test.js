@@ -75,3 +75,37 @@ test("rejects invalid or repeated pagination values", async () => {
         await admin.get(`/api/users?${query}`).expect(400);
     }
 });
+
+test("matches keyword fragments literally and case-insensitively across list fields", async () => {
+    for (const search of ["Passenger 03", "PASSENGER03", "P03@EXAMPLE.COM"]) {
+        const response = await admin.get("/api/users").query({ search }).expect(200);
+        expect(response.body.users.map((user) => user.username)).toEqual(["passenger03"]);
+    }
+    const literal = await admin.get("/api/users").query({ search: ".*" }).expect(200);
+    expect(literal.body.users).toEqual([]);
+    expect(literal.body.pagination.totalItems).toBe(0);
+    const blank = await admin.get("/api/users").query({ search: " " }).expect(200);
+    expect(blank.body.pagination.totalItems).toBe(13);
+});
+
+test("combines role and search before counting and paging", async () => {
+    const query = { role: "customer", search: "  EXAMPLE.COM  " };
+    const first = (await admin.get("/api/users").query(query).expect(200)).body;
+    const second = (await admin.get("/api/users").query({ ...query, page: 2 }).expect(200)).body;
+    expect(first.users).toHaveLength(10);
+    expect(second.users).toHaveLength(2);
+    expect(second.pagination).toMatchObject({
+        currentPage: 2, totalItems: 12, totalPages: 2, role: "customer", search: "EXAMPLE.COM",
+    });
+    expect([...first.users, ...second.users].every((user) => user.role === "customer")).toBe(true);
+    const admins = await admin.get("/api/users?role=admin").expect(200);
+    expect(admins.body.users.map((user) => user.username)).toEqual(["admin-user"]);
+});
+
+test("rejects invalid filters and protects filtered responses", async () => {
+    for (const query of ["role=owner", "role=admin&role=customer", "search=a&search=b"]) {
+        await admin.get(`/api/users?${query}`).expect(400);
+    }
+    await admin.get("/api/users").query({ search: "a".repeat(101) }).expect(400);
+    await customer.get("/api/users?role=admin").expect(403);
+});

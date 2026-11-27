@@ -18,14 +18,25 @@ export async function getUsers(req, res) {
         });
     }
 
+    const { role, search = "" } = req.query;
+    if (role !== undefined && role !== "admin" && role !== "customer") {
+        return res.status(400).json({ message: "Role must be admin or customer." });
+    }
+    if (typeof search !== "string" || search.length > 100) {
+        return res.status(400).json({ message: "Search must be text of up to 100 characters." });
+    }
+
+    const keyword = search.trim();
     try {
-        const { users, totalItems } = await listUsers({ page, limit });
+        const { users, totalItems } = await listUsers({ page, limit, role, search: keyword });
         return res.json({
             users,
             pagination: {
                 currentPage: page,
                 itemsPerPage: limit,
                 totalItems,
+                role: role ?? null,
+                search: keyword,
                 totalPages: Math.ceil(totalItems / limit),
             },
         });

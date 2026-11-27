@@ -25,6 +25,14 @@ const router = Router();
  *       - in: query
  *         name: limit
  *         schema: { type: integer, minimum: 1, maximum: 10, default: 10 }
+ *       - in: query
+ *         name: role
+ *         description: Exact role name
+ *         schema: { type: string, enum: [admin, customer] }
+ *       - in: query
+ *         name: search
+ *         description: Case-insensitive literal match in display name, username, or email
+ *         schema: { type: string, maxLength: 100 }
  *     responses:
  *       200:
  *         description: Paginated users. A page with no results has an empty users array.
@@ -49,9 +57,11 @@ const router = Router();
  *                     currentPage: { type: integer }
  *                     itemsPerPage: { type: integer }
  *                     totalItems: { type: integer }
+ *                     role: { type: string, nullable: true }
+ *                     search: { type: string }
  *                     totalPages: { type: integer }
  *       400:
- *         description: Invalid pagination parameters
+ *         description: Invalid pagination, role, or search parameters
  *       401:
  *         description: Sign-in required
  *       403:
