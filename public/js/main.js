@@ -37,64 +37,144 @@ const hookSeasonSorter = () => {
     }
 };
 
+// Trains catalog with pagination
+
 const hookTrainsCatalog = async () => {
     const listEl = document.getElementById('trains-list');
     const templateEl = document.getElementById('train-card-template');
     const loadingEl = document.getElementById('trains-loading');
     const errorEl = document.getElementById('trains-error');
+    const paginationEl = document.getElementById('trains-pagination');
+    const previousBtn = document.getElementById('trains-previous');
+    const nextBtn = document.getElementById('trains-next');
+    const pageInfoEl = document.getElementById('trains-page-info');
+
+    // Search elements
+    const searchForm = document.getElementById('trains-search-form');
+    const searchInput = document.getElementById('trains-search');
 
     if (!listEl || !templateEl) {
         return;
     }
 
-    try {
-        const response = await fetch('/api/trains');
+    let currentPage = 1;
+    let currentSearch = '';
 
-        if (!response.ok) {
-            throw new Error(`Failed to load trains (${response.status})`);
+    const loadTrains = async (page) => {
+        try {
+            if (loadingEl) loadingEl.hidden = false;
+            if (errorEl) errorEl.hidden = true;
+
+            const params = new URLSearchParams({
+                page: String(page),
+                limit: '10',
+                search: currentSearch,
+            });
+
+            const response = await fetch(`/api/trains?${params.toString()}`);
+
+            if (!response.ok) {
+                throw new Error(`Failed to load trains (${response.status})`);
+            }
+
+            const payload = await response.json();
+            const trains = payload.trains || [];
+            const pagination = payload.pagination;
+            const fragment = document.createDocumentFragment();
+
+            if (trains.length === 0) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.className = 'trains-state';
+                emptyMessage.textContent = currentSearch
+                    ? 'No trains found matching your search.'
+                    : 'No trains are currently available.';
+
+                fragment.appendChild(emptyMessage);
+            }
+
+            trains.forEach((train) => {
+                const card = templateEl.content.cloneNode(true);
+                const imageEl = card.querySelector('[data-field="image"]');
+
+                imageEl.src = train.imageUrl;
+                imageEl.alt = train.imageAlt || `${train.name} train`;
+
+                card.querySelector('[data-field="name"]').textContent = train.name;
+                card.querySelector('[data-field="operator"]').textContent = train.operator;
+                card.querySelector('[data-field="type"]').textContent = train.type;
+                card.querySelector('[data-field="speed"]').textContent = `${train.maxSpeedKmh} km/h`;
+                card.querySelector('[data-field="seats"]').textContent = `${train.capacity} seats`;
+                card.querySelector('[data-field="power"]').textContent = train.powerSource;
+                card.querySelector('[data-field="description"]').textContent = train.description;
+                card.querySelector('[data-field="best-for"]').textContent = train.bestFor;
+
+                fragment.appendChild(card);
+            });
+
+            listEl.replaceChildren(fragment);
+            currentPage = pagination.currentPage;
+
+            if (pageInfoEl) {
+                pageInfoEl.textContent = pagination.totalPages > 0
+                    ? `Page ${pagination.currentPage} of ${pagination.totalPages}`
+                    : 'No pages available';
+            }
+
+            if (previousBtn) {
+                previousBtn.disabled = currentPage <= 1;
+            }
+
+            if (nextBtn) {
+                nextBtn.disabled = currentPage >= pagination.totalPages;
+            }
+
+            if (paginationEl) {
+                paginationEl.hidden = pagination.totalPages <= 1;
+            }
+        } catch (error) {
+            console.error('Error loading trains:', error);
+
+            if (errorEl) {
+                errorEl.hidden = false;
+                errorEl.textContent = 'Unable to load trains right now. Please try again in a moment.';
+            }
+        } finally {
+            if (loadingEl) loadingEl.hidden = true;
         }
+    };
 
-        const payload = await response.json();
-        const trains = payload.trains || [];
-        const fragment = document.createDocumentFragment();
+    // Handle search form submission
+    if (searchForm && searchInput) {
+        searchForm.addEventListener('submit', (event) => {
+            event.preventDefault();
 
-        trains.forEach((train) => {
-            const card = templateEl.content.cloneNode(true);
-            const imageEl = card.querySelector('[data-field="image"]');
+            currentSearch = searchInput.value.trim();
+            currentPage = 1;
 
-            imageEl.src = train.imageUrl;
-            imageEl.alt = train.imageAlt || `${train.name} train`;
-
-            card.querySelector('[data-field="name"]').textContent = train.name;
-            card.querySelector('[data-field="operator"]').textContent = train.operator;
-            card.querySelector('[data-field="type"]').textContent = train.type;
-            card.querySelector('[data-field="speed"]').textContent = `${train.maxSpeedKmh} km/h`;
-            card.querySelector('[data-field="seats"]').textContent = `${train.capacity} seats`;
-            card.querySelector('[data-field="power"]').textContent = train.powerSource;
-            card.querySelector('[data-field="description"]').textContent = train.description;
-            card.querySelector('[data-field="best-for"]').textContent = train.bestFor;
-
-            fragment.appendChild(card);
+            loadTrains(currentPage);
         });
-
-        listEl.replaceChildren(fragment);
-
-        if (loadingEl) {
-            loadingEl.hidden = true;
-        }
-    } catch (error) {
-        console.error('Error loading trains:', error);
-
-        if (loadingEl) {
-            loadingEl.hidden = true;
-        }
-
-        if (errorEl) {
-            errorEl.hidden = false;
-            errorEl.textContent = 'Unable to load trains right now. Please try again in a moment.';
-        }
     }
+
+    // Previous page
+    if (previousBtn) {
+        previousBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                loadTrains(currentPage - 1);
+            }
+        });
+    }
+
+    // Next page
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            loadTrains(currentPage + 1);
+        });
+    }
+
+    // Initial train loading
+    await loadTrains(currentPage);
 };
+
 
 const hookStationsCatalog = async () => {
     const listEl = document.getElementById('stations-list');
@@ -188,26 +268,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
 // Logout functionality
-document.addEventListener("DOMContentLoaded", () => {
-    const logoutButton = document.getElementById("logout-button");
+document.addEventListener('DOMContentLoaded', () => {
+    const logoutButton = document.getElementById('logout-button');
 
     if (logoutButton) {
-        logoutButton.addEventListener("click", async () => {
+        logoutButton.addEventListener('click', async () => {
             try {
-                const response = await fetch("/api/auth/logout", {
-                    method: "POST",
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
                 });
 
                 if (response.ok) {
-                    window.location.href = "/login";
+                    window.location.href = '/login';
                 } else {
-                    alert("Unable to log out. Please try again.");
+                    alert('Unable to log out. Please try again.');
                 }
             } catch (error) {
-                console.error("Logout error:", error);
-                alert("Something went wrong while logging out.");
+                console.error('Logout error:', error);
+                alert('Something went wrong while logging out.');
             }
         });
     }

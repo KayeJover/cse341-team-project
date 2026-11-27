@@ -176,6 +176,70 @@ router.get("/stations/:stationId", getStationById);
 // TRAINS API
 // ==========================================
 
+
+/**
+ * @swagger
+ * /trains:
+ *   get:
+ *     summary: Get all trains with pagination and keyword search
+ *     description: Retrieves trains with pagination. Optionally searches train names, operators, and types.
+ *     tags: [Trains]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 10
+ *           default: 10
+ *         description: Number of trains per page
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *           maxLength: 100
+ *         description: Search trains by name, operator, or type (case-insensitive)
+ *         example: express
+ *     responses:
+ *       200:
+ *         description: Paginated list of trains matching the search
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 trains:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     totalItems:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     currentPage:
+ *                       type: integer
+ *                     itemsPerPage:
+ *                       type: integer
+ *                     search:
+ *                       type: string
+ *       400:
+ *         description: Invalid pagination or search parameters
+ *       500:
+ *         description: Failed to fetch trains
+ */
+
+
 router.get("/trains", getAllTrains);
 router.get("/trains/:id", getTrainById);
 
