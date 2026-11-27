@@ -69,6 +69,12 @@ const bookingSchema = new mongoose.Schema(
                 "sunday",
             ],
         },
+        specialRequests: {
+    type: String,
+    trim: true,
+    maxlength: 500,
+    default: "",
+},
         passengers: {
             type: [passengerSchema],
             required: true,
