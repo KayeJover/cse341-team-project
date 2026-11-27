@@ -26,11 +26,12 @@ export async function getTripById(req, res) {
     }
 }
 
-
 export async function getAllTrips(req, res) {
     try {
         const page = Number(req.query.page ?? 1);
         const limit = Number(req.query.limit ?? 10);
+
+        const { keyword = "", region = "all", season = "all" } = req.query;
 
         // Validate pagination parameters
         if (
@@ -45,7 +46,22 @@ export async function getAllTrips(req, res) {
             });
         }
 
-        const result = await findAllTrips(page, limit);
+        // Validate search parameters
+        if (
+            typeof keyword !== "string" ||
+            typeof region !== "string" ||
+            typeof season !== "string"
+        ) {
+            return res.status(400).json({
+                message: "Invalid search or filter parameters."
+            });
+        }
+
+        const result = await findAllTrips(page, limit, {
+            keyword: keyword.trim(),
+            region,
+            season
+        });
 
         return res.status(200).json(result);
 
