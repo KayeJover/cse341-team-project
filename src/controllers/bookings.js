@@ -49,6 +49,27 @@ const validateSpecialRequests = (specialRequests) => {
     );
 };
 
+// Validate a date in YYYY-MM-DD format
+const parseBookingDate = (value) => {
+    if (
+        typeof value !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(value)
+    ) {
+        return null;
+    }
+
+    const date = new Date(`${value}T00:00:00.000Z`);
+
+    if (
+        Number.isNaN(date.getTime()) ||
+        date.toISOString().slice(0, 10) !== value
+    ) {
+        return null;
+    }
+
+    return date;
+};
+
 const getBookingDetails = async (scheduleId, ticketClass, selectedDay) => {
     // Retrieve schedule using the Schedule model
     const schedule = await getScheduleById(scheduleId);
@@ -129,8 +150,66 @@ export const getAllBookings = async (req, res, next) => {
             });
         }
 
+        const { ticketClass, startDate, endDate } = req.query;
+
+        // Begin with the user's access restrictions.
         const filter = bookingAccessFilter(req.user);
 
+        // Filter by ticket class.
+        if (ticketClass !== undefined && ticketClass !== "") {
+            if (
+                typeof ticketClass !== "string" ||
+                !["standard", "premium", "first"].includes(
+                    ticketClass.trim().toLowerCase()
+                )
+            ) {
+                return res.status(400).json({
+                    message: "Invalid ticket class filter.",
+                });
+            }
+
+            filter.ticketClass = ticketClass.trim().toLowerCase();
+        }
+
+        // Filter by booking creation date.
+        if (startDate !== undefined || endDate !== undefined) {
+            const start = startDate !== undefined
+                ? parseBookingDate(startDate)
+                : null;
+
+            const end = endDate !== undefined
+                ? parseBookingDate(endDate)
+                : null;
+
+            if (
+                (startDate !== undefined && !start) ||
+                (endDate !== undefined && !end)
+            ) {
+                return res.status(400).json({
+                    message: "Dates must be valid and use YYYY-MM-DD format.",
+                });
+            }
+
+            if (start && end && start > end) {
+                return res.status(400).json({
+                    message: "Start date cannot be after end date.",
+                });
+            }
+
+            filter.createdAt = {};
+
+            if (start) {
+                filter.createdAt.$gte = start;
+            }
+
+            if (end) {
+                const endExclusive = new Date(end);
+                endExclusive.setUTCDate(endExclusive.getUTCDate() + 1);
+                filter.createdAt.$lt = endExclusive;
+            }
+        }
+
+        // Use the same combined filter for the count and booking list.
         const totalBookings = await countBookings(filter);
         const totalPages = Math.ceil(totalBookings / limit);
 
@@ -160,7 +239,10 @@ export const getAllBookings = async (req, res, next) => {
 export const getBookingHandler = async (req, res, next) => {
     try {
         const { bookingId } = req.params;
-        const booking = await getBookingById(bookingId, bookingAccessFilter(req.user));
+        const booking = await getBookingById(
+            bookingId,
+            bookingAccessFilter(req.user)
+        );
 
         if (!booking) {
             return await respondToMissingAccessibleBooking(res, bookingId);
@@ -175,13 +257,13 @@ export const getBookingHandler = async (req, res, next) => {
 // POST /api/bookings
 export const createBookingHandler = async (req, res, next) => {
     try {
-       const {
-    scheduleId,
-    ticketClass,
-    selectedDay,
-    passengers,
-    specialRequests,
-} = req.body;
+        const {
+            scheduleId,
+            ticketClass,
+            selectedDay,
+            passengers,
+            specialRequests,
+        } = req.body;
 
         const numericScheduleId = Number(scheduleId);
 
@@ -197,9 +279,8 @@ export const createBookingHandler = async (req, res, next) => {
         if (
             typeof ticketClass !== "string" ||
             typeof selectedDay !== "string" ||
-            !validatePassengers(passengers)
-         || !validateSpecialRequests(specialRequests)
-
+            !validatePassengers(passengers) ||
+            !validateSpecialRequests(specialRequests)
         ) {
             return res.status(400).json({
                 message: "Invalid booking or passenger information.",
@@ -269,7 +350,9 @@ export const updateBookingHandler = async (req, res, next) => {
         }
 
         if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
-            return res.status(400).json({ message: "A booking update object is required." });
+            return res.status(400).json({
+                message: "A booking update object is required.",
+            });
         }
 
         const {
@@ -431,7 +514,10 @@ export const updateBookingHandler = async (req, res, next) => {
 export const deleteBookingHandler = async (req, res, next) => {
     try {
         const { bookingId } = req.params;
-        const booking = await deleteBooking(bookingId, bookingAccessFilter(req.user));
+        const booking = await deleteBooking(
+            bookingId,
+            bookingAccessFilter(req.user)
+        );
 
         if (!booking) {
             return await respondToMissingAccessibleBooking(res, bookingId);
@@ -504,9 +590,8 @@ export const processBookingRequest = async (req, res, next) => {
             numericScheduleId < 1 ||
             typeof ticketClass !== "string" ||
             typeof selectedDay !== "string" ||
-            !validatePassengers(passengers)
-         || !validateSpecialRequests(specialRequests)
-
+            !validatePassengers(passengers) ||
+            !validateSpecialRequests(specialRequests)
         ) {
             return res.status(400).send("Invalid booking information.");
         }
@@ -571,7 +656,7 @@ export const confirmationPage = async (req, res, next) => {
         }
 
         return res.render("trips/confirm", {
-            title: "Trip Confirmation",
+            title: "Booking Confirmation",
             confirmation: booking,
         });
     } catch (error) {

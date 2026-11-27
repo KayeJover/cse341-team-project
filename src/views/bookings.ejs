@@ -1,107 +1,325 @@
 
-<%- include('./partials/header') %>
+let bookingChangePending = false;
+let currentPage = 1;
+let totalPages = 1;
 
-<section class="bookings-hero">
-    <h1>Bookings</h1>
-    <p>View and manage passenger bookings across the Kizuna Rail network.</p>
-</section>
+const updatePaginationControls = () => {
+    const previousButton = document.getElementById("previous-page");
+    const nextButton = document.getElementById("next-page");
+    const pageInfo = document.getElementById("page-info");
 
-<section class="bookings-catalog">
+    if (previousButton) {
+        previousButton.disabled = currentPage <= 1;
+    }
 
-    <div class="booking-summary">
-        <article class="booking-summary-card">
-            <h2 id="total-bookings">0</h2>
-            <p>Total Bookings</p>
-        </article>
+    if (nextButton) {
+        nextButton.disabled = currentPage >= totalPages;
+    }
 
-        <article class="booking-summary-card">
-            <h2 id="confirmed-bookings">0</h2>
-            <p>Confirmed Bookings</p>
-        </article>
-    </div>
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+};
 
-    <div id="bookings-loading" class="bookings-state">
-        Loading bookings...
-    </div>
+// Get the currently selected booking filters.
+const getBookingFilters = () => ({
+    ticketClass: document.getElementById("filter-ticket-class")?.value || "",
+    startDate: document.getElementById("filter-start-date")?.value || "",
+    endDate: document.getElementById("filter-end-date")?.value || "",
+});
 
-    <div id="bookings-error" class="bookings-state bookings-error" role="alert" hidden>
-    </div>
+// Build the API URL with pagination and active filters.
+const buildBookingsUrl = () => {
+    const params = new URLSearchParams();
+    const filters = getBookingFilters();
 
-    <p id="bookings-feedback" role="status" hidden></p>
+    params.set("page", currentPage);
 
-    <div class="bookings-table-wrapper">
-        <table class="bookings-table">
-            <thead>
+    Object.entries(filters).forEach(([key, value]) => {
+        if (value) {
+            params.set(key, value);
+        }
+    });
+
+    return `/api/bookings?${params.toString()}`;
+};
+
+const changeBooking = async (bookingId, method, status) => {
+    const errorEl = document.getElementById("bookings-error");
+    const feedbackEl = document.getElementById("bookings-feedback");
+    const list = document.getElementById("bookings-list");
+
+    const controls = list.querySelectorAll("button, select");
+    const isUpdate = method === "PUT";
+    const options = { method };
+
+    if (isUpdate) {
+        options.headers = { "Content-Type": "application/json" };
+        options.body = JSON.stringify({ status });
+    }
+
+    bookingChangePending = true;
+
+    controls.forEach((control) => {
+        control.disabled = true;
+    });
+
+    errorEl.hidden = true;
+    feedbackEl.hidden = true;
+
+    try {
+        const response = await fetch(
+            `/api/bookings/${encodeURIComponent(bookingId)}`,
+            options
+        );
+
+        if (!response.ok) {
+            let failure = null;
+
+            try {
+                failure = await response.json();
+            } catch {
+                // Use the HTTP status message if the response is not JSON.
+            }
+
+            throw new Error(
+                failure?.message ||
+                `Unable to change booking (${response.status}).`
+            );
+        }
+
+        feedbackEl.textContent = isUpdate
+            ? "Booking updated."
+            : "Booking deleted.";
+
+        feedbackEl.hidden = false;
+
+        await loadBookings();
+    } catch (error) {
+        errorEl.textContent = error.message;
+        errorEl.hidden = false;
+    } finally {
+        bookingChangePending = false;
+
+        controls.forEach((control) => {
+            control.disabled = false;
+        });
+    }
+};
+
+const loadBookings = async () => {
+    const listEl = document.getElementById("bookings-list");
+    const templateEl = document.getElementById("booking-row-template");
+    const loadingEl = document.getElementById("bookings-loading");
+    const errorEl = document.getElementById("bookings-error");
+
+    if (!listEl || !templateEl) {
+        return;
+    }
+
+    loadingEl.hidden = false;
+    errorEl.hidden = true;
+
+    try {
+        const response = await fetch(buildBookingsUrl());
+
+        if (!response.ok) {
+            let failure = null;
+
+            try {
+                failure = await response.json();
+            } catch {
+                // Use the HTTP status message if the response is not JSON.
+            }
+
+            throw new Error(
+                failure?.message ||
+                `Failed to load bookings (${response.status}).`
+            );
+        }
+
+        const payload = await response.json();
+        const bookings = payload.bookings || [];
+        const pagination = payload.pagination || {};
+
+        totalPages = Math.max(1, pagination.totalPages || 1);
+
+        // Handle an empty last page after deleting a booking.
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+            await loadBookings();
+            return;
+        }
+
+        const totalEl = document.getElementById("total-bookings");
+        const confirmedEl = document.getElementById("confirmed-bookings");
+
+        if (totalEl) {
+            totalEl.textContent =
+                pagination.totalBookings ?? payload.count ?? 0;
+        }
+
+        if (confirmedEl) {
+            confirmedEl.textContent = bookings.filter(
+                (booking) => booking.status === "confirmed"
+            ).length;
+        }
+
+        if (bookings.length === 0) {
+            listEl.innerHTML = `
                 <tr>
-                    <th>Booking ID</th>
-                    <th>Schedule</th>
-                    <th>Trip</th>
-                    <th>Passengers</th>
-                    <th>Ticket Class</th>
-                    <th>Total Amount</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th scope="col">Actions</th>
+                    <td colspan="9">No bookings found.</td>
                 </tr>
-            </thead>
+            `;
+        } else {
+            const fragment = document.createDocumentFragment();
 
-            <tbody id="bookings-list">
-                <!-- Booking records are populated using JavaScript -->
-            </tbody>
-        </table>
-    </div>
+            bookings.forEach((booking) => {
+                const row = templateEl.content.cloneNode(true);
 
-    <div id="bookings-pagination" class="bookings-pagination">
-        <button
-            type="button"
-            id="previous-page"
-            disabled
-        >
-            Previous
-        </button>
+                row.querySelector('[data-field="id"]').textContent =
+                    booking.id || "N/A";
 
-        <span id="page-info" aria-live="polite">
-            Page 1 of 1
-        </span>
+                row.querySelector('[data-field="schedule"]').textContent =
+                    booking.scheduleId ?? "N/A";
 
-        <button
-            type="button"
-            id="next-page"
-            disabled
-        >
-            Next
-        </button>
-    </div>
+                row.querySelector('[data-field="trip"]').textContent =
+                    booking.tripId || "N/A";
 
-    <template id="booking-row-template">
-        <tr>
-            <td data-field="id"></td>
-            <td data-field="schedule"></td>
-            <td data-field="trip"></td>
-            <td data-field="passengers"></td>
-            <td data-field="ticket-class"></td>
-            <td data-field="amount"></td>
-            <td data-field="status"></td>
-            <td data-field="created"></td>
-            <td>
-                <form class="booking-actions">
-                    <label>
-                        Status
-                        <select name="status">
-                            <option value="confirmed">Confirmed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </label>
+                row.querySelector('[data-field="passengers"]').textContent =
+                    booking.passengers?.length ?? 0;
 
-                    <button type="submit">Save status</button>
-                    <button type="button" data-action="delete">Delete</button>
-                </form>
-            </td>
-        </tr>
-    </template>
+                row.querySelector('[data-field="ticket-class"]').textContent =
+                    booking.ticketClass || "N/A";
 
-</section>
+                row.querySelector('[data-field="amount"]').textContent =
+                    booking.totalAmount != null
+                        ? `₹${Number(booking.totalAmount).toFixed(2)}`
+                        : "N/A";
 
-<script src="/js/bookings.js" defer></script>
+                row.querySelector('[data-field="status"]').textContent =
+                    booking.status || "N/A";
 
-<%- include('./partials/footer') %>
+                row.querySelector('[data-field="created"]').textContent =
+                    booking.createdAt
+                        ? new Date(booking.createdAt).toLocaleDateString()
+                        : "N/A";
+
+                const form = row.querySelector(".booking-actions");
+                const status = form.elements.namedItem("status");
+
+                status.value = booking.status;
+
+                form.setAttribute(
+                    "aria-label",
+                    `Actions for booking ${booking.id}`
+                );
+
+                form.addEventListener("submit", (event) => {
+                    event.preventDefault();
+
+                    if (!bookingChangePending && status.value) {
+                        changeBooking(
+                            booking.id,
+                            "PUT",
+                            status.value
+                        );
+                    }
+                });
+
+                form.querySelector('[data-action="delete"]')
+                    .addEventListener("click", () => {
+                        if (
+                            !bookingChangePending &&
+                            window.confirm(`Delete booking ${booking.id}?`)
+                        ) {
+                            changeBooking(booking.id, "DELETE");
+                        }
+                    });
+
+                fragment.appendChild(row);
+            });
+
+            listEl.replaceChildren(fragment);
+        }
+
+        updatePaginationControls();
+
+    } catch (error) {
+        console.error("Error loading bookings:", error);
+
+        errorEl.hidden = false;
+        errorEl.textContent = error.message ||
+            "Unable to load bookings right now. Please try again.";
+    } finally {
+        loadingEl.hidden = true;
+    }
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+    const previousButton = document.getElementById("previous-page");
+    const nextButton = document.getElementById("next-page");
+
+    const filterForm = document.getElementById("booking-filters");
+    const clearFiltersButton = document.getElementById(
+        "clear-booking-filters"
+    );
+
+    // Apply selected filters.
+    filterForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const filters = getBookingFilters();
+
+        if (
+            filters.startDate &&
+            filters.endDate &&
+            filters.startDate > filters.endDate
+        ) {
+            const errorEl = document.getElementById("bookings-error");
+
+            errorEl.textContent =
+                "Start date cannot be after end date.";
+            errorEl.hidden = false;
+
+            return;
+        }
+
+        currentPage = 1;
+
+        loadBookings();
+    });
+
+    // Clear all filters and reload the first page.
+    clearFiltersButton?.addEventListener("click", () => {
+        filterForm?.reset();
+
+        currentPage = 1;
+
+        const errorEl = document.getElementById("bookings-error");
+        const feedbackEl = document.getElementById("bookings-feedback");
+
+        errorEl.hidden = true;
+        feedbackEl.hidden = true;
+
+        loadBookings();
+    });
+
+    // Previous page.
+    previousButton?.addEventListener("click", () => {
+        if (currentPage > 1) {
+            currentPage--;
+            loadBookings();
+        }
+    });
+
+    // Next page.
+    nextButton?.addEventListener("click", () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            loadBookings();
+        }
+    });
+
+    loadBookings();
+});
