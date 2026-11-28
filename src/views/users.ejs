@@ -1,0 +1,29 @@
+<%- include('./partials/header') %>
+
+<section class="content">
+    <h1>User Admin</h1>
+    <p id="users-status" role="status"></p>
+    <p id="users-error" role="alert" hidden></p>
+    <button type="button" id="users-retry" hidden>Retry</button>
+
+    <table id="users-table" hidden>
+        <thead>
+            <tr>
+                <th scope="col">Display name</th>
+                <th scope="col">Username</th>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+            </tr>
+        </thead>
+        <tbody id="users-list"></tbody>
+    </table>
+
+    <nav aria-label="User pagination">
+        <button type="button" id="users-previous" disabled>Previous</button>
+        <span id="users-page" aria-live="polite"></span>
+        <button type="button" id="users-next" disabled>Next</button>
+    </nav>
+</section>
+
+<script src="/js/users.js" defer></script>
+<%- include('./partials/footer') %>

@@ -19,4 +19,8 @@ router.get(
     }
 );
 
+router.get("/users", requirePageRole("admin"), (req, res) => {
+    res.render("users", { title: "User Admin", user: req.user });
+});
+
 export default router;
