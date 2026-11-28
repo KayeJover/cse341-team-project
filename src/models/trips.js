@@ -64,3 +64,25 @@ export async function getTripFilters() {
 
     return { regions, seasons };
 }
+
+
+/**
+ * Update an existing trip using its custom trip ID.
+ */
+export async function updateTripById(id, updates) {
+    return Trip.findOneAndUpdate(
+        { id },
+        { $set: updates },
+        {
+            returnDocument: "after",
+            runValidators: true,
+        }
+    ).lean();
+}
+
+/**
+ * Delete an existing trip using its custom trip ID.
+ */
+export async function deleteTripById(id) {
+    return Trip.findOneAndDelete({ id }).lean();
+}

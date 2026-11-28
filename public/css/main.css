@@ -18,3 +18,199 @@
 @import 'components/columns-grid.css' layer(components);
 
 @import 'layout/all-layouts.css' layer(layout);
+
+
+/* ========================================
+   Trip Administration Page
+   ======================================== */
+
+.trip-admin-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.trip-admin-page h1 {
+    margin-bottom: 16px;
+}
+
+.trip-admin-page h2 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+}
+
+.trip-admin-page .routes-grid {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, 260px), 1fr)
+    );
+    gap: 20px;
+}
+
+/* Trip cards */
+
+.trip-admin-page .trip-admin-card {
+    background-color: #ffffff;
+    color: #243447;
+    border: 1px solid #d9e0e7;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.trip-admin-page .trip-admin-card h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.trip-admin-page .trip-admin-card p {
+    margin: 8px 0;
+}
+
+/* Buttons */
+
+.trip-admin-page button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 5px;
+    background-color: #245780;
+    color: #ffffff;
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin: 6px 6px 6px 0;
+}
+
+.trip-admin-page button:hover {
+    background-color: #193e5c;
+}
+
+.trip-admin-page button[data-action="delete"] {
+    background-color: #b42318;
+}
+
+.trip-admin-page button[data-action="delete"]:hover {
+    background-color: #8c1c13;
+}
+
+.trip-admin-page #cancel-edit {
+    background-color: #52606d;
+}
+
+.trip-admin-page button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Trip editing section */
+
+.trip-admin-page #trip-editor {
+    margin-top: 32px;
+    padding: 24px;
+    background-color: #f7f9fc;
+    color: #243447;
+    border: 1px solid #d9e0e7;
+    border-radius: 10px;
+}
+
+.trip-admin-page #trip-editor[hidden] {
+    display: none;
+}
+
+.trip-admin-page #trip-edit-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.trip-admin-page label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.trip-admin-page input,
+.trip-admin-page textarea,
+.trip-admin-page select {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #9ca9b5;
+    border-radius: 5px;
+    background-color: #ffffff;
+    color: #243447;
+    font: inherit;
+}
+
+.trip-admin-page textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.trip-admin-page input:focus,
+.trip-admin-page textarea:focus,
+.trip-admin-page select:focus,
+.trip-admin-page button:focus-visible {
+    outline: 2px solid #245780;
+    outline-offset: 2px;
+}
+
+/* Schedule management */
+
+.trip-admin-page #current-trip-schedules {
+    background-color: #ffffff;
+    padding: 16px;
+    border: 1px solid #d9e0e7;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.trip-admin-page #current-trip-schedules li {
+    margin-bottom: 8px;
+}
+
+.trip-admin-page #schedule-assignment-form {
+    margin-top: 16px;
+}
+
+.trip-admin-page #assign-schedule {
+    margin-top: 12px;
+}
+
+/* Status and error messages */
+
+.trip-admin-page #trip-admin-message {
+    padding: 12px;
+    border-radius: 5px;
+    background-color: #e8f4ec;
+    color: #176438;
+}
+
+.trip-admin-page #trip-admin-message:empty {
+    display: none;
+}
+
+.trip-admin-page #trip-admin-message[role="alert"] {
+    background-color: #fce8e8;
+    color: #9b1c1c;
+}
+
+/* Responsive layout */
+
+@media (max-width: 768px) {
+    .trip-admin-page {
+        padding: 16px;
+    }
+
+    .trip-admin-page #trip-edit-form {
+        grid-template-columns: 1fr;
+    }
+
+    .trip-admin-page #trip-editor {
+        padding: 16px;
+    }
+
+    .trip-admin-page .trip-admin-card {
+        padding: 16px;
+    }
+}

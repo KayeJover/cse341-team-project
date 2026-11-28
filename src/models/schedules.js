@@ -28,3 +28,53 @@ export async function getSchedulesByTripId(tripId, month = null) {
         .sort({ departureTime: 1 })
         .lean();
 }
+
+/**
+ * Count all schedules associated with a trip.
+ */
+export async function countSchedulesByTripId(tripId) {
+    return Schedule.countDocuments({ tripId });
+}
+
+/**
+ * Retrieve all schedules, including inactive schedules.
+ */
+export async function getAllSchedules() {
+    return Schedule.find()
+        .sort({ departureTime: 1 })
+        .lean();
+}
+
+/**
+ * Retrieve all schedules assigned to a specific trip.
+ */
+export async function getAdminSchedulesByTripId(tripId) {
+    return Schedule.find({ tripId })
+        .sort({ departureTime: 1 })
+        .lean();
+}
+
+/**
+ * Reassign an existing schedule to another trip.
+ */
+export async function reassignSchedule(
+    scheduleId,
+    currentTripId,
+    newTripId
+) {
+    return Schedule.findOneAndUpdate(
+        {
+            id: scheduleId,
+            tripId: currentTripId,
+        },
+        {
+            $set: {
+                tripId: newTripId,
+            },
+        },
+        {
+            returnDocument: "after",
+            runValidators: true,
+        }
+    ).lean();
+}

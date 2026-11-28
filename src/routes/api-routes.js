@@ -9,16 +9,21 @@ import {
     logout,
 } from "../controllers/auth.js";
 
-import { requireApiLogin, requireAuth } from "../middleware/auth.js";
+import { requireApiLogin, requireAuth, requireApiRole } from "../middleware/auth.js";
 
 import {
     getAllTrips,
     getTripById,
+    updateTripHandler,
+    deleteTripHandler,
 } from "../controllers/trips.js";
 
 import {
     getSchedulesForTrip,
     getSchedulesForTripAndMonth,
+    getAllSchedulesHandler,
+    getAdminTripSchedulesHandler,
+    reassignScheduleHandler,
 } from "../controllers/schedules.js";
 
 import {
@@ -164,6 +169,40 @@ router.get("/auth/me", requireAuth, (req, res) => {
 // Trips routes
 router.get("/trips", getAllTrips);
 router.get("/trips/:tripId", getTripById);
+
+// Protected trip update route
+router.put(
+    "/trips/:tripId",
+    requireApiRole("admin"),
+    updateTripHandler
+);
+
+// Protected trip delete route
+router.delete(
+    "/trips/:tripId",
+    requireApiRole("admin"),
+    deleteTripHandler
+);
+
+// Protected administrative schedule routes
+router.get(
+    "/admin/schedules",
+    requireApiRole("admin"),
+    getAllSchedulesHandler
+);
+
+router.get(
+    "/admin/trips/:tripId/schedules",
+    requireApiRole("admin"),
+    getAdminTripSchedulesHandler
+);
+
+// Reassign an existing schedule to a trip.
+router.put(
+    "/admin/schedules/:scheduleId",
+    requireApiRole("admin"),
+    reassignScheduleHandler
+);
 
 // ==========================================
 // STATIONS API

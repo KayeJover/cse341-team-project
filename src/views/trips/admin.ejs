@@ -1,0 +1,155 @@
+
+<%- include('../partials/header') %>
+
+<section class="admin-dashboard trip-admin-page">
+    <h1><%= title %></h1>
+
+    <p>
+        Manage existing trips, update trip information,
+        select stations, assign schedules, and delete trips.
+    </p>
+
+    <p>
+        <a href="/admin">Back to Admin Dashboard</a>
+    </p>
+
+    <p id="trip-admin-message" role="status" aria-live="polite"></p>
+
+    <button type="button" id="reload-trips">
+        Reload Trips
+    </button>
+
+    <!-- Trip list populated dynamically through the API. -->
+    <section>
+        <h2>All Trips</h2>
+
+        <div id="admin-trips-list">
+            <p>Loading trips...</p>
+        </div>
+    </section>
+
+    <!-- Trip editing form. -->
+    <section id="trip-editor" hidden>
+        <h2>Edit Trip</h2>
+
+        <form id="trip-edit-form">
+            <input type="hidden" id="trip-id">
+
+            <div>
+                <label for="trip-name">Trip Name</label>
+                <input type="text" id="trip-name" required>
+            </div>
+
+            <div>
+                <label for="trip-description">Description</label>
+                <textarea id="trip-description" required></textarea>
+            </div>
+
+            <div>
+                <label for="trip-region">Region</label>
+                <input type="text" id="trip-region" required>
+            </div>
+
+            <div>
+                <label for="trip-start-station">Start Station</label>
+                <select id="trip-start-station" required></select>
+            </div>
+
+            <div>
+                <label for="trip-end-station">End Station</label>
+                <select id="trip-end-station" required></select>
+            </div>
+
+            <div>
+                <label for="trip-duration">Duration</label>
+                <input type="text" id="trip-duration" required>
+            </div>
+
+            <div>
+                <label for="trip-distance">Distance</label>
+                <input
+                    type="number"
+                    id="trip-distance"
+                    min="0"
+                    step="any"
+                    required
+                >
+            </div>
+
+            <div>
+                <label for="trip-highlights">Highlights</label>
+                <textarea
+                    id="trip-highlights"
+                    placeholder="Separate highlights with commas"
+                    required
+                ></textarea>
+            </div>
+
+            <div>
+                <label for="trip-best-season">Best Season</label>
+                <input type="text" id="trip-best-season" required>
+            </div>
+
+            <div>
+                <label for="trip-operating-months">
+                    Operating Months
+                </label>
+                <input
+                    type="text"
+                    id="trip-operating-months"
+                    placeholder="Example: 1, 2, 3, 4"
+                    required
+                >
+            </div>
+
+            <div>
+                <label for="trip-image-url">Image URL</label>
+                <input type="text" id="trip-image-url">
+            </div>
+
+            <div>
+                <button type="submit" id="save-trip">
+                    Save Changes
+                </button>
+
+                <button type="button" id="cancel-edit">
+                    Cancel
+                </button>
+            </div>
+        </form>
+
+        <!-- Existing schedule management. -->
+        <section>
+            <h3>Current Schedules</h3>
+
+            <div id="current-trip-schedules">
+                <p>No schedules loaded.</p>
+            </div>
+
+            <h3>Assign an Existing Schedule</h3>
+
+            <p>
+                Select an existing schedule to move it to this trip.
+                Schedules with existing bookings cannot be reassigned.
+            </p>
+
+            <form id="schedule-assignment-form">
+                <label for="existing-schedule">
+                    Available Schedules
+                </label>
+
+                <select id="existing-schedule" required>
+                    <option value="">Select a schedule</option>
+                </select>
+
+                <button type="submit" id="assign-schedule">
+                    Assign Schedule
+                </button>
+            </form>
+        </section>
+    </section>
+</section>
+
+<script src="/js/trip-admin.js" defer></script>
+
+<%- include('../partials/footer') %>
